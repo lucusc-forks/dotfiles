@@ -6,16 +6,19 @@ if OS.mac?
     tap "homebrew/cask-fonts"
     tap "koekeishiya/formulae"
 
+    tap/bitwarden-cli # password manager
+
     brew "noti" # utility to display notifications from scripts
     brew "trash" # rm, but put in the trash rather than completely delete
 
     # Applications
     cask "obsidian" # second brain
     cask "imageoptim" # a tool to optimize images
-    cask "bitwarden/tap/bitwarden-cli"
+    cask "bitwarden" # password manager
     cask "wezterm" # a better terminal emulator
     cask "alfred"
     cask "visual-studio-code"
+    cask "orbstack" # Docker Desktop replacement
 
     # yabai
     brew "yabai"
