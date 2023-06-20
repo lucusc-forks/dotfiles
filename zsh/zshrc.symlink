@@ -1,3 +1,10 @@
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 export ZSH=$DOTFILES/zsh
 
 if [[ -d $DOTFILES/zsh/functions ]]; then
@@ -101,6 +108,9 @@ zfetch zsh-users/zsh-syntax-highlighting
 zfetch zsh-users/zsh-autosuggestions
 zfetch grigorii-zander/zsh-npm-scripts-autocomplete
 zfetch Aloxaf/fzf-tab
+
+# Setup powerlevel10k
+zfetch romkatv/powerlevel10k
 
 if [[ -x "$(command -v fnm)" ]]; then
     eval "$(fnm env --use-on-cd)"
