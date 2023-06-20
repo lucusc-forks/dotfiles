@@ -8,3 +8,5 @@ Brewfile.lock.json
 lazy-lock.json
 config/kitty/kitty-overrides.conf
 zsh/.zsh_history
+.DS_Store
+
