@@ -1,11 +1,13 @@
 local wezterm = require("wezterm")
 
 local config = {
-  color_scheme = "Catppuccin Mocha",
-  window_background_opacity = 0.85,
+  -- color_scheme = "Catppuccin Mocha",
+  color_scheme = 'Neon (terminal.sexy)',
+  window_background_opacity = 0.95,
   enable_tab_bar = false,
   window_decorations = "RESIZE",
-  font = wezterm.font("Rec Mono Duotone", { weight = "Medium" }),
+  -- font = wezterm.font("Rec Mono Duotone", { weight = "Medium" }),
+  font = wezterm.font("MesloLGS Nerd Font"),
   native_macos_fullscreen_mode = true,
   keys = {
     {
