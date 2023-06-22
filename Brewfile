@@ -14,9 +14,9 @@ if OS.mac?
     cask "imageoptim" # a tool to optimize images
     cask "bitwarden" # password manager
     cask "wezterm" # a better terminal emulator
-    cask "alfred"
     cask "visual-studio-code"
     cask "orbstack" # Docker Desktop replacement
+    cask "raycast"
 
     # yabai
     brew "yabai"
@@ -66,6 +66,7 @@ brew "z" # switch between most used directories
 brew "zoxide" # switch between most used directories
 brew "zsh" # zsh (latest)
 brew "htop" # a top alternative
+brew "bitwarden-cli" # bitwarden cli
 
 brew "glow" # markdown viewer
 brew "gnupg" # GPG
