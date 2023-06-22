@@ -48,10 +48,10 @@ brew "fnm" # Fast Node version manager
 brew "yarn" # package manager
 
 # vim
-brew "fzf" # Fuzzy file searcher, used in scripts and in vim
-brew "neofetch" # pretty system info
-brew "neovim" # A better vim
-brew "vim" # Vim (latest)
+# brew "fzf" # Fuzzy file searcher, used in scripts and in vim
+# brew "neofetch" # pretty system info
+# brew "neovim" # A better vim
+# brew "vim" # Vim (latest)
 
 # git and friends
 brew "gh" # GitHub CLI
