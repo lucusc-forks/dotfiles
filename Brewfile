@@ -16,6 +16,7 @@ if OS.mac?
     cask "wezterm" # a better terminal emulator
     cask "visual-studio-code"
     cask "orbstack" # Docker Desktop replacement
+    cask "spotify"
     cask "raycast"
 
     # yabai
