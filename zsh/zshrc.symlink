@@ -107,7 +107,7 @@ zfetch mafredri/zsh-async async.plugin.zsh
 zfetch zsh-users/zsh-syntax-highlighting
 zfetch zsh-users/zsh-autosuggestions
 zfetch grigorii-zander/zsh-npm-scripts-autocomplete
-zfetch Aloxaf/fzf-tab
+
 
 # Setup powerlevel10k
 zfetch romkatv/powerlevel10k
