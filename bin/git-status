@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+get_git_branch_name() {
+    if [[ -d "$1/.git" ]]; then
+        branch=$(git -C "$1" symbolic-ref --short HEAD 2>/dev/null)
+        if [[ -z "$branch" ]]; then 
+            branch="<detatched>"
+        fi
+        echo -e "[$1] \033[0;32m$branch\033[0m"
+    fi
+}
+
+print_git_branches() {
+    for dir in "$1"/*; do
+        if [[ -d "$dir" ]]; then
+            get_git_branch_name "$dir"
+        fi
+    done
+}
+
+if [[ -n "$1" ]]; then
+    print_git_branches "$1"
+else
+   echo "Usage: git-status <path>"
+fi
