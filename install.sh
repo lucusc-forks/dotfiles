@@ -68,12 +68,13 @@ setup_symlinks() {
 
     for file in $(get_linkables) ; do
         target="$HOME/.$(basename "$file" '.symlink')"
+        info "Checking existence of ~${target#$HOME}"
         if [ -e "$target" ]; then
-            info "~${target#$HOME} already exists... Skipping."
+            info "~${target#$HOME} already exists... Updating."            
         else
             info "Creating symlink for $file"
-            ln -s "$file" "$target"
         fi
+        ln -sfn "$file" "$target"
     done
 
     echo -e
@@ -84,14 +85,16 @@ setup_symlinks() {
     fi
 
     config_files=$(find "$DOTFILES/config" -maxdepth 1 2>/dev/null)
+    
     for config in $config_files; do
         target="$HOME/.config/$(basename "$config")"
+        info "Checking existence of ~${target#$HOME}"
         if [ -e "$target" ]; then
-            info "~${target#$HOME} already exists... Skipping."
+            info "~${target#$HOME} already exists... Updating."
         else
             info "Creating symlink for $config"
-            ln -s "$config" "$target"
         fi
+        ln -sfn "$config" "$target"
     done
 }
 
@@ -259,6 +262,9 @@ case "$1" in
     catppuccin)
         fetch_catppuccin_theme
         ;;
+    symlink)
+        setup_symlinks
+        ;;
     all)
         setup_symlinks
         setup_terminfo
@@ -268,7 +274,7 @@ case "$1" in
         setup_macos
         ;;
     *)
-        echo -e $"\nUsage: $(basename "$0") {backup|link|git|homebrew|shell|terminfo|macos|all}\n"
+        echo -e $"\nUsage: $(basename "$0") {backup|link|git|homebrew|shell|terminfo|macos|symlink|all}\n"
         exit 1
         ;;
 esac
