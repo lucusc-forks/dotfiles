@@ -82,3 +82,6 @@ brew "wget" # internet file retriever
 # languages
 brew "dotnet@6" # .NET 6
 brew "python" # python (latst)
+
+# Docker
+brew dive # a tool for exploring each layer in a docker image
