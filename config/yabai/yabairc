@@ -38,7 +38,7 @@ yabai -m rule --add app="^Microsoft Remote Desktop$" manage=off
 yabai -m rule --add app="^WezTerm$" manage=off
 
 # Stop teams popups from being managed
-yabai -m rule --add title="$| Microsoft Teams" manage=off
+#yabai -m rule --add title="^.+ \| Microsoft Teams$" manage=off
 
 # mouse support
 yabai -m config mouse_modifier fn
@@ -47,3 +47,7 @@ yabai -m config mouse_action2 resize
 yabai -m config mouse_follows_focus off
 yabai -m c config focus_follows_mouse off
 
+# Rules
+yabai -m rule --add app="^Spotify$" space=6
+yabai -m rule --add app="^Microsoft Teams$" space=4
+yabai -m rule --add app="^Microsoft Oultool$" space=5
