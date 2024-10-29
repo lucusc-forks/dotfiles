@@ -80,7 +80,6 @@ brew "wdiff" # word differences in text files
 brew "wget" # internet file retriever
 
 # languages
-brew "dotnet@6" # .NET 6
 brew "python" # python (latst)
 
 # Docker
