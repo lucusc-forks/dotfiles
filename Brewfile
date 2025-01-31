@@ -18,10 +18,11 @@ if OS.mac?
     cask "orbstack" # Docker Desktop replacement
     cask "spotify"
     cask "raycast"
-
-    # yabai
-    brew "yabai"
-    brew "skhd"
+    cask "hyperkey" # remap caps lock to hyper key ctrl+alt+cmd+shift
+    
+    # using Raycast instead of these for window management
+    # brew "yabai"
+    # brew "skhd"
 
     # Fonts
     cask "font-fira-code"
@@ -30,6 +31,7 @@ if OS.mac?
     cask "font-meslo-lg-nerd-font"
     cask "font-meslo-for-powerline"
     cask "font-recursive-code"
+
 elsif OS.linux?
     brew "xclip" # access to clipboard (similar to pbcopy/pbpaste)
 end
