@@ -51,7 +51,6 @@ brew "fnm" # Fast Node version manager
 brew "yarn" # package manager
 
 # vim
-# brew "fzf" # Fuzzy file searcher, used in scripts and in vim
 # brew "neofetch" # pretty system info
 # brew "neovim" # A better vim
 # brew "vim" # Vim (latest)
@@ -65,8 +64,8 @@ brew "lazygit" # a better git UI
 # terminal
 brew "tmux" # terminal multiplexer
 brew "tree" # pretty-print directory contents
-brew "z" # switch between most used directories
 brew "zoxide" # switch between most used directories
+brew "fzf" # Fuzzy file searcher, used in scripts and in vim
 brew "zsh" # zsh (latest)
 brew "htop" # a top alternative
 brew "bitwarden-cli" # bitwarden cli
@@ -77,12 +76,12 @@ brew "grep" # grep (latest)
 brew "highlight" # code syntax highlighting
 brew "jq" # work with JSON files in shell scripts
 brew "ripgrep" # very fast file searcher
-brew "shellcheck" # diagnostics for shell sripts
+brew "shellcheck" # diagnostics for shell scripts
 brew "wdiff" # word differences in text files
 brew "wget" # internet file retriever
 
 # languages
-brew "python" # python (latst)
+brew "python" # python (latest)
 
 # Docker
 brew dive # a tool for exploring each layer in a docker image
