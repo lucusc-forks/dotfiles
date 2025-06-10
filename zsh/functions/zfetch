@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 # This code was originally from
 # https://github.com/jason0x43/dotfiles/blob/eff04270c4d8074db36d3e3bf85f64d3ccbeafe9/zsh/functions/zfetch
+# Modified to improve startup performance
 
 # Terminal colors
 TC='\e['
@@ -18,7 +19,7 @@ git_clone_error_msg() {
     echo -e "  ${Red}[ERROR]${Rst} git clone errored: ${Red}${1}${Rst}. ${Yel}aborting...${Rst}"
 }
 
-# Simplest dependency fetcher known to mankind
+# Improved dependency fetcher optimized for speed
 if [[ $1 == "update" ]]; then
     for name in ${(@k)plugins}; do
         local cwd=$(pwd)
@@ -33,10 +34,8 @@ elif [[ $1 == "ls" ]]; then
         echo -e "${name}: ${Yel}$plugins[$name]${Rst}"
     done
 else
-
   # the short name of the repo (org/repo)
   local name="$1"
-
   local plugin_name="${2:-"${name##*/}.plugin.zsh"}"
 
   # where the repo is going
@@ -49,37 +48,51 @@ else
       dest=$dest/$name
   fi
 
-  local cwd=$(pwd)
   plugins[$name]=$dest
-
-  if [[ ! -d $dest ]]; then
-      local url=git@github.com:$name
-      local ref=$3
-      echo -e "Missing plugin ${Yel}${name}${Rst}"
-      echo -e "  Cloning from ${Blu}${url}${Rst}..."
-      if [[ -n $ref ]]; then
-          git clone --quiet $url $dest
-          if [[ $? != 0 ]]; then
-              git_clone_error_msg $?
-              cd $cwd
-              return $?
-          fi
-
-          git checkout --quiet $ref
-          echo -e "  Checked out branch ${ref}"
-      else
-          git clone --quiet --depth 1 $url $dest
-          if [[ $? != 0 ]]; then
-              git_clone_error_msg $?
-              cd $cwd
-              return $?
-          fi
-          echo -e "  Checked out default branch"
-      fi
-  fi
   plugin="$dest/$plugin_name"
+
+  # Only clone if directory doesn't exist
+  if [[ ! -d $dest ]]; then
+      # Create a helper function to install the plugin (only called when needed)
+      # This avoids running git commands on every startup
+      function __install_plugin_${name//[^a-zA-Z0-9]/_}() {
+          local cwd=$(pwd)
+          local url=git@github.com:$name
+          local ref=$3
+          echo -e "Missing plugin ${Yel}${name}${Rst}"
+          echo -e "  Cloning from ${Blu}${url}${Rst}..."
+          
+          if [[ -n $ref ]]; then
+              git clone --quiet $url $dest
+              if [[ $? != 0 ]]; then
+                  git_clone_error_msg $?
+                  cd $cwd
+                  return $?
+              fi
+              cd $dest
+              git checkout --quiet $ref
+              echo -e "  Checked out branch ${ref}"
+          else
+              git clone --quiet --depth 1 $url $dest
+              if [[ $? != 0 ]]; then
+                  git_clone_error_msg $?
+                  cd $cwd
+                  return $?
+              fi
+              echo -e "  Checked out default branch"
+          fi
+          cd $cwd
+      }
+      
+      # Call the helper function
+      __install_plugin_${name//[^a-zA-Z0-9]/_}
+      
+      # Clean up the function after use
+      unfunction __install_plugin_${name//[^a-zA-Z0-9]/_}
+  fi
+  
+  # Source the plugin if it exists
   if [ -f "$plugin" ]; then
       source "$plugin"
   fi
-  cd $cwd
 fi

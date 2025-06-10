@@ -1,3 +1,9 @@
+# Uncomment to profile zsh startup time
+# zmodload zsh/zprof
+
+# Absolute essentials first (set environment variables needed by p10k instant prompt)
+export ZSH=$DOTFILES/zsh
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
@@ -5,8 +11,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-export ZSH=$DOTFILES/zsh
-
+# Load essential functions that don't involve user interaction
 if [[ -d $DOTFILES/zsh/functions ]]; then
     for func in $DOTFILES/zsh/functions/*(:t); autoload -U $func
 fi
@@ -15,9 +20,13 @@ fi
 # Configuration
 ########################################################
 
-# initialize autocomplete
+# initialize autocomplete with caching
 autoload -U compinit add-zsh-hook
-compinit
+if [ $(date +'%j') != $(stat -f '%Sm' -t '%j' ~/.zcompdump 2>/dev/null) ]; then
+  compinit
+else
+  compinit -C
+fi
 
 prepend_path /usr/local/opt/grep/libexec/gnubin
 prepend_path /usr/local/sbin
@@ -146,7 +155,7 @@ if [[ -x "$(command -v zoxide)" ]]; then
     eval "$(zoxide init zsh --hook pwd)"
 else
   # source z.sh if it exists
-  zpath="$(brew --prefix)/etc/profile.d/z.sh"
+  zpath="$BREW_PREFIX/etc/profile.d/z.sh"
   if [ -f "$zpath" ]; then
       source "$zpath"
   fi
@@ -169,3 +178,57 @@ done
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 # If a ~/.localrc zshrc exists, source it
 [[ -a ~/.localrc ]] && source ~/.localrc
+
+# pnpm
+export PNPM_HOME="/Users/lucuscrawford/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+# Setup lazy loading for NVM to improve shell startup time
+export NVM_DIR="$HOME/.nvm"
+
+# Lazy-load NVM
+nvm() {
+  unset -f nvm node npm npx
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  nvm "$@"
+}
+
+# Lazy-load node
+node() {
+  unset -f nvm node npm npx
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  node "$@"
+}
+
+# Lazy-load npm
+npm() {
+  unset -f nvm node npm npx
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  npm "$@"
+}
+
+# Lazy-load npx
+npx() {
+  unset -f nvm node npm npx
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  npx "$@"
+}
+
+# Golang environment variables
+export GOPATH=$HOME/go
+export PATH=$GOPATH/bin:$GOROOT/bin:$HOME/.local/bin:$PATH:
+
+# Lazy-load Azure CLI completions
+az() {
+  unset -f az
+  autoload bashcompinit && bashcompinit
+  source "$BREW_PREFIX/etc/bash_completion.d/az"
+  az "$@"
+}
+
+# Uncomment to display zsh profiling information
+# [[ ${ZPROF:-} = true ]] && zprof
