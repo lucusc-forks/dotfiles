@@ -237,6 +237,34 @@ setup_macos() {
     fi
 }
 
+# Check for Zinit and install it if needed
+setup_zinit() {
+  title "Setting up Zinit plugin manager"
+  
+  ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+  if [[ ! -d "$ZINIT_HOME" ]]; then
+    info "Installing Zinit..."
+    mkdir -p "$(dirname $ZINIT_HOME)"
+    git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+    success "Zinit installed successfully!"
+  else
+    success "Zinit is already installed."
+  fi
+}
+
+# look for all .zsh files and source them, skipping zinit-installer.zsh
+config_files=($DOTFILES/**/*.zsh)
+for file in $config_files[@]; do
+  # Skip installer script and old plugin files that might conflict with Zinit
+  if [[ "$file" != "$ZSH/zinit-installer.zsh" && 
+        "$file" != *"/powerlevel10k.zsh-theme" && 
+        "$file" != *"/plugins/"* ]]; then
+    source "$file"
+  fi
+done
+
+setup_zinit
+
 case "$1" in
     backup)
         backup

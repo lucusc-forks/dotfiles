@@ -13,7 +13,9 @@ fi
 
 # Load essential functions that don't involve user interaction
 if [[ -d $DOTFILES/zsh/functions ]]; then
-    for func in $DOTFILES/zsh/functions/*(:t); autoload -U $func
+    for func in $DOTFILES/zsh/functions/*(:t); do
+        autoload -U $func
+    done
 fi
 
 ########################################################
@@ -104,22 +106,49 @@ zstyle ':completion:*' group-name ''
 
 
 ########################################################
-# Plugin setup
+# Zinit Plugin Manager Setup
 ########################################################
 
-export ZPLUGDIR="$CACHEDIR/zsh/plugins"
-[[ -d "$ZPLUGDIR" ]] || mkdir -p "$ZPLUGDIR"
-# array containing plugin information (managed by zfetch)
-typeset -A plugins
+# Define Zinit home directory
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
-zfetch mafredri/zsh-async async.plugin.zsh
-zfetch zsh-users/zsh-syntax-highlighting
-zfetch zsh-users/zsh-autosuggestions
-zfetch grigorii-zander/zsh-npm-scripts-autocomplete
+# Source Zinit if it exists, otherwise try to install it
+if [[ -d "$ZINIT_HOME" ]]; then
+  source "${ZINIT_HOME}/zinit.zsh"
+else
+  # Try to install Zinit
+  if [[ -f "$ZSH/zinit-installer.zsh" ]]; then
+    source "$ZSH/zinit-installer.zsh"
+    # If installation was successful, source Zinit
+    if [[ -d "$ZINIT_HOME" ]]; then
+      source "${ZINIT_HOME}/zinit.zsh"
+    else
+      echo "Failed to install Zinit. Please install manually."
+    fi
+  else
+    echo "Zinit installer not found. Please run: zsh $ZSH/zinit-installer.zsh"
+  fi
+fi
 
-
-# Setup powerlevel10k
-zfetch romkatv/powerlevel10k
+# Only proceed with Zinit plugin loading if Zinit is available
+if (( ${+functions[zinit]} )); then
+  # Load fast plugins that don't need to be deferred
+  zinit light mafredri/zsh-async
+  
+  # Load the rest of the plugins with turbo mode (deferred loading)
+  zinit ice wait lucid
+  zinit light zsh-users/zsh-syntax-highlighting
+  
+  zinit ice wait lucid atload'_zsh_autosuggest_start'
+  zinit light zsh-users/zsh-autosuggestions
+  
+  zinit ice wait lucid
+  zinit light grigorii-zander/zsh-npm-scripts-autocomplete
+  
+  # Powerlevel10k theme
+  zinit ice depth=1
+  zinit light romkatv/powerlevel10k
+fi
 
 if [[ -x "$(command -v fnm)" ]]; then
     eval "$(fnm env --use-on-cd)"
@@ -168,10 +197,14 @@ else # macOS `ls`
     colorflag="-G"
 fi
 
-# look for all .zsh files and source them
+# look for all .zsh files and source them, skipping zinit-installer.zsh
 config_files=($DOTFILES/**/*.zsh)
 for file in $config_files[@]; do
-  source "$file"
+  # Skip installer script and old plugin files that might conflict with Zinit
+  if [[ "$file" != "$ZSH/zinit-installer.zsh" && 
+        "$file" != *"/plugins/"* ]]; then
+    source "$file"
+  fi
 done
 
 # If a ~/.zshrc.local exists, source it

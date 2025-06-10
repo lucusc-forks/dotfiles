@@ -121,23 +121,6 @@ The prompt for ZSH is configured in the `zshrc.symlink` file and performs the fo
 - Sources a `~/.localrc`, if available for configuration that is machine-specific and/or should not ever be checked into git
 - Adds `~/bin` and `$DOTFILES/bin` to the `PATH`
 
-### ZSH plugins
-
-There are a number of plugins in use for ZSH, and they are installed and maintained separately via the `zfetch` command. `zfetch` is a custom plugin manager available [here](./zsh/functions/zfetch). The plugins that are used are listed in the `.zshrc` and include
-
-- [zsh-async](https://github.com/mafredri/zsh-async async.plugin.zsh)
-- [zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)
-- [zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)
-- [zsh-npm-scripts-autocomplete](https://github.com/grigorii-zander/zsh-npm-scripts-autocomplete)
-- [fzf-tab](https://github.com/Aloxaf/fzf-tab)
-
-Additional plugins can be added to the `~/.zshrc`, or to `~/.localrc` if you want them to stay out of git.
-
-```bash
-# Add a line like this and the plugin will automatically be downloaded and sourced
-zfetch nicknisi/work-scripts
-```
-
 ### Prompt
 
 Aloxaf/fzf-tab
@@ -273,3 +256,51 @@ reccomendations are also available, cross-platform.
 ## Questions
 
 If you have questions, notice issues, or would like to see improvements, please open a new [discussion](https://github.com/nicknisi/dotfiles/discussions/new) and I'm happy to help you out!
+
+## Plugin Management
+
+This configuration uses [Zinit](https://github.com/zdharma-continuum/zinit) as the Zsh plugin manager for fast, asynchronous plugin loading. Zinit offers several advantages:
+
+- Significantly faster shell startup time through deferred/turbo loading
+- Asynchronous plugin loading that doesn't block shell initialization
+- Fine-grained control over when and how plugins are loaded
+- Simple plugin updates with `zinit update`
+
+During installation, the setup script will automatically install Zinit if it's not already present. You can also manually install it by running:
+
+```bash
+zsh /Users/Shared/dev/personal/dotfiles/zsh/zinit-installer.zsh
+```
+
+### Managing Plugins
+
+To update all plugins:
+
+```bash
+zinit update --all
+```
+
+To see which plugins are loaded (active plugins):
+
+```bash
+zinit zstatus
+```
+
+To see the actual plugin directories (manually check what's installed):
+
+```bash
+ls -la ~/.local/share/zinit/plugins
+```
+
+To see plugin load times and performance metrics:
+
+```bash
+zinit times
+```
+
+To get detailed information about a specific plugin:
+
+```bash
+zinit report plugin-name
+# Example: zinit report zsh-users/zsh-autosuggestions
+```
