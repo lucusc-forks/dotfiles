@@ -257,3 +257,31 @@ To get detailed information about a specific plugin:
 zinit report plugin-name
 # Example: zinit report zsh-users/zsh-autosuggestions
 ```
+
+## Utility scripts (bin/)
+
+The `bin/` directory contains a collection of small helper scripts used during development and system tasks. Below is a short reference table describing each script and its purpose.
+
+| Script | Description |
+|--------|-------------|
+| `battery` | Print current battery percentage on macOS using `pmset`. |
+| `brew-why` | List installed Homebrew formulae and print which other installed formulae depend on each one. |
+| `colortest` | Display 256-color foreground and background samples (useful for terminal color testing). |
+| `confirm` | Prompt the user with a yes/no question and return success (0) on 'y'. |
+| `extract` | Extract many archive formats (zip, tar.gz, tar.bz2, rar, 7z, etc.). Usage: `extract <file>`. |
+| `fromhex` | Convert a hex color (e.g. `#RRGGBB`) to the nearest 256-color index. |
+| `git-bare-clone` | Clone a repository as a bare repo and set it up to work with worktrees (creates a `.git` file pointing to the bare repo). |
+| `git-clc` | Copy the last commit SHA of a branch to the clipboard (macOS `pbcopy`). |
+| `git-kill` | Delete local branches and remove them from all remotes (dangerous — deletes branches). |
+| `git-modified` | Print the last commit date for every tracked file in the repository. |
+| `git-status` | Print the current branch for all repositories in a given directory. Usage: `git-status <path>`. |
+| `git-track` | Push the current branch to a remote and set upstream (defaults to `origin`). |
+| `isdir` | Return success (0) if the argument is an existing directory. |
+| `isfile` | Return success (0) if the argument is an existing file. |
+| `jwt` | Decode a JWT (JSON Web Token) body to JSON (uses `jq`). Optionally pass `1` as second argument to decode the header. |
+| `killport` | Kill the process listening on a given port (uses `wtfport` internally). |
+| `manage` | A small helper to `build` or `start` the Docker test image for the dotfiles. |
+| `nerdwin` | Return a Nerd Font icon glyph for a given program/window name (used in status bars). |
+| `t` | Helper to run targeted tests (react-scripts or jest) with optional coverage and watch flags. Usage: `t <path/to/spec>`.
+| `wtfport` | Print the PID (and writes process name to stderr) of the process listening on a given port. |
+
