@@ -173,9 +173,6 @@ setup_shell() {
 function setup_terminfo() {
     title "Configuring terminfo"
 
-    info "adding tmux.terminfo"
-    tic -x "$DOTFILES/resources/tmux.terminfo"
-
     info "adding xterm-256color-italic.terminfo"
     tic -x "$DOTFILES/resources/xterm-256color-italic.terminfo"
 }

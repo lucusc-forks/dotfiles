@@ -13,16 +13,12 @@ if OS.mac?
     cask "obsidian" # second brain
     cask "imageoptim" # a tool to optimize images
     cask "bitwarden" # password manager
-    cask "wezterm" # a better terminal emulator
     cask "visual-studio-code"
     cask "orbstack" # Docker Desktop replacement
     cask "spotify"
     cask "raycast"
     cask "hyperkey" # remap caps lock to hyper key ctrl+alt+cmd+shift
     
-    # using Raycast instead of these for window management
-    # brew "yabai"
-    # brew "skhd"
 
     # Fonts
     cask "font-fira-code"
@@ -62,7 +58,7 @@ brew "git-delta" # a better git diff
 brew "lazygit" # a better git UI
 
 # terminal
-brew "tmux" # terminal multiplexer
+cask "wezterm" # a better terminal emulator
 brew "tree" # pretty-print directory contents
 brew "zoxide" # switch between most used directories
 brew "fzf" # Fuzzy file searcher, used in scripts and in vim

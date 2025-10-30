@@ -1,32 +1,15 @@
 #!/usr/bin/env bash
-# Based on https://github.com/joshmedeski/tmux-nerd-font-window-name
+# Minimalized nerdwin: provide an icon for a given window name.
 
 NAME=$1
-SHOW_NAME="$(tmux show -gqv '@tmux-nerd-font-window-name-show-name')"
-
-function get_shell_icon() {
-  local default_shell_icon=""
-  local shell_icon
-  shell_icon="$(tmux show -gqv '@tmux-nerd-font-window-name-shell-icon')"
-  if [ "$shell_icon" != "" ]; then
-    echo "$shell_icon"
-  else
-    echo "$default_shell_icon"
-  fi
-}
-
-SHELL_ICON=$(get_shell_icon)
 
 get_icon() {
   case $NAME in
-  tmux)
-    echo ""
-    ;;
   htop | top)
     echo ""
     ;;
   fish | zsh | bash | tcsh)
-    echo "$SHELL_ICON"
+    echo ""
     ;;
   vi | vim | nvim | lvim)
     echo ""
@@ -56,19 +39,10 @@ get_icon() {
     echo ""
     ;;
   *)
-    if [ "$SHOW_NAME" = true ]; then
-      echo ""
-    else
-      echo "$NAME"
-    fi
+    echo "$NAME"
     ;;
   esac
 }
 
 ICON=$(get_icon)
-
-if [ "$SHOW_NAME" = true ]; then
-  echo "$ICON" "$NAME"
-else
-  echo "$ICON"
-fi
+echo "$ICON"
