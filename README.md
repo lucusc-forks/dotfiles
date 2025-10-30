@@ -182,53 +182,6 @@ All plugins are listed in [plugins.lua](./config/nvim/lua/plugins.lua). When a p
 > **Note**
 > Plugins can be synced in a headless way from the command line using the `vimu` alias.
 
-## tmux configuration
-
-I prefer to run everything inside of [tmux](https://github.com/tmux/tmux). I typically use a large pane on the top for neovim and then multiple panes along the bottom or right side for various commands I may need to run. There are no pre-configured layouts in this repository, as I tend to create them on-the-fly and as needed.
-
-This repo ships with a `tm` command which provides a list of active session, or provides prompts to create a new one.
-
-```bash
-> tm
-Available sessions
-------------------
-
-1) New Session
-Please choose your session: 1
-Enter new session name: open-source
-```
-
-This configuration provides a bit of style to the tmux bar, along with some additional data such as the currently playing song (from Apple Music or Spotify), the system name, the session name, and the current time.
-
-> **Note**
-> It also changes the prefix from `⌃-b` to `⌃-a` (⌃ is the _control_ key). This is because I tend to remap the Caps Lock button to Control, and then having the prefix makes more sense.
-
-### tmux key commands
-
-Pressing the Prefix followed by the following will have the following actions in tmux.
-
-| Command     | Description                    |
-| ----------- | ------------------------------ |
-| `h`         | Select the pane to the left    |
-| `j`         | Select the pane to the bottom  |
-| `k`         | Select the pane to the top     |
-| `l`         | Select the pane to the right   |
-| `⇧-H`       | Enlarge the pane to the left   |
-| `⇧-J`       | Enlarge the pane to the bottom |
-| `⇧-K`       | Enlarge the pane to the top    |
-| `⇧-L`       | Enlarge the pane to the right  |
-| `-` (dash)  | Create a vertical split        |
-| `\|` (pipe) | Create a horizontal split      |
-
-### Minimal tmux UI
-
-Setting a `$TMUX_MINIMAL` environment variable will do some extra work to hide the tmux status bar when there is only a
-single tmux window open. This is not the default in this repo because it can be confusing, but it is my preferred way to
-work. To set this, you can use the `~/.localrc` file to set it in the following way.
-
-```shell
-export TMUX_MINIMAL=1
-```
 
 ## Docker Setup
 
