@@ -1,55 +1,39 @@
-# Starship Prompt Configuration — Catppuccin Mocha
-
-# Catppuccin Mocha palette reference:
-# rosewater = "#f5e0dc"  flamingo = "#f2cdcd"  pink = "#f5c2e7"
-# mauve = "#cba6f7"      red = "#f38ba8"       maroon = "#eba0ac"
-# peach = "#fab387"      yellow = "#f9e2af"    green = "#a6e3a1"
-# teal = "#94e2d5"       sky = "#89dceb"       sapphire = "#74c7ec"
-# blue = "#89b4fa"       lavender = "#b4befe"  text = "#cdd6f4"
-# subtext1 = "#bac2de"   subtext0 = "#a6adc8"  overlay2 = "#9399b2"
-# overlay1 = "#7f849c"   overlay0 = "#6c7086"  surface2 = "#585b70"
-# surface1 = "#45475a"   surface0 = "#313244"  base = "#1e1e2e"
-# mantle = "#181825"     crust = "#11111b"
+# Starship Prompt Configuration
+# Styled to match previous Powerlevel10k "pure/lean" config
+# Two-line prompt: segments on line 1, ❯ on line 2
+# No background colors — transparent, space-separated segments
 
 format = """
-[](blue)\
 $os\
-$username\
-[](bg:sapphire fg:blue)\
 $directory\
-[](fg:sapphire bg:green)\
 $git_branch\
 $git_status\
-[](fg:green bg:peach)\
+$fill\
 $nodejs\
 $python\
 $dotnet\
-[](fg:peach bg:surface1)\
 $docker_context\
 $cmd_duration\
-[](fg:surface1)\
-$fill\
+$jobs\
 $status\
 $line_break\
 $character"""
 
+add_newline = false
+scan_timeout = 100
+
 [os]
 disabled = false
-style = "bg:blue fg:crust"
+style = "bold"
 [os.symbols]
 Macos = " "
 Linux = " "
 Windows = "󰍲 "
 
-[username]
-show_always = false
-style_user = "bg:blue fg:crust"
-style_root = "bg:red fg:crust"
-format = "[$user ]($style)"
-
 [directory]
-style = "bg:sapphire fg:crust"
-format = "[ $path ]($style)"
+style = "bold 39"
+format = "[$path]($style)[$read_only]($read_only_style) "
+read_only = " 󰌾"
 truncation_length = 3
 truncation_symbol = "…/"
 [directory.substitutions]
@@ -59,49 +43,68 @@ truncation_symbol = "…/"
 "code" = "󰲋 "
 
 [git_branch]
-symbol = ""
-style = "bg:green fg:crust"
-format = "[ $symbol $branch ]($style)"
+symbol = " "
+style = "76"
+format = "[$symbol$branch(:$remote_branch)]($style) "
+truncation_length = 32
+truncation_symbol = "…"
 
 [git_status]
-style = "bg:green fg:crust"
-format = "[$all_status$ahead_behind ]($style)"
+style = ""
+format = "[$all_status$ahead_behind]($style)"
+ahead = "[⇡$count](76) "
+behind = "[⇣$count](76) "
+diverged = "[⇣$behind_count⇡$ahead_count](76) "
+conflicted = "[~$count](196) "
+staged = "[+$count](178) "
+modified = "[!$count](178) "
+untracked = "[?$count](39) "
+stashed = "[*$count](76) "
+deleted = "[✘$count](196) "
+renamed = "[»$count](178) "
 
 [nodejs]
-symbol = ""
-style = "bg:peach fg:crust"
-format = "[ $symbol ($version) ]($style)"
+symbol = " "
+style = "green"
+format = "[$symbol($version )]($style)"
 detect_files = ["package.json", ".node-version"]
 
 [python]
-symbol = ""
-style = "bg:peach fg:crust"
-format = "[ $symbol ($version) ]($style)"
+symbol = " "
+style = "yellow"
+format = "[$symbol($version )]($style)"
 
 [dotnet]
-symbol = "󰪮"
-style = "bg:peach fg:crust"
-format = "[ $symbol ($version) ]($style)"
+symbol = "󰪮 "
+style = "blue"
+format = "[$symbol($version )]($style)"
 
 [docker_context]
-symbol = ""
-style = "bg:surface1 fg:text"
-format = "[ $symbol $context ]($style)"
+symbol = " "
+style = "blue"
+format = "[$symbol$context]($style) "
 
 [cmd_duration]
-min_time = 2_000
-style = "bg:surface1 fg:text"
-format = "[ 󱎫 $duration ]($style)"
+min_time = 3_000
+show_milliseconds = false
+style = "101"
+format = "[$duration]($style) "
+
+[jobs]
+style = "70"
+symbol = "✱"
+format = "[$symbol]($style) "
 
 [fill]
 symbol = " "
 
 [status]
 disabled = false
-symbol = "✘"
+symbol = "✘ "
 success_symbol = ""
-format = "[$symbol$status ]($style)"
+style = "160"
+format = "[$symbol$status]($style) "
 
 [character]
-success_symbol = "[❯](green)"
-error_symbol = "[❯](red)"
+success_symbol = "[❯](76)"
+error_symbol = "[❯](196)"
