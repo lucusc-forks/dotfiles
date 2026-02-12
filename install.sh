@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOTFILES="$(pwd)"
+DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COLOR_GRAY="\033[1;38;5;243m"
 COLOR_BLUE="\033[1;34m"
 COLOR_GREEN="\033[1;32m"
@@ -31,6 +31,18 @@ success() {
     echo -e "${COLOR_GREEN}$1${COLOR_NONE}"
 }
 
+is_macos() {
+    [[ "$(uname)" == "Darwin" ]]
+}
+
+is_linux() {
+    [[ "$(uname)" == "Linux" ]]
+}
+
+is_wsl() {
+    is_linux && grep -qi microsoft /proc/version 2>/dev/null
+}
+
 get_linkables() {
     find -H "$DOTFILES" -maxdepth 3 -name '*.symlink'
 }
@@ -47,15 +59,6 @@ backup() {
         if [ -f "$target" ]; then
             echo "backing up $filename"
             cp "$target" "$BACKUP_DIR"
-        else
-            warning "$filename does not exist at this location or is a symlink"
-        fi
-    done
-
-    for filename in "$HOME/.config/nvim" "$HOME/.vim" "$HOME/.vimrc"; do
-        if [ ! -L "$filename" ]; then
-            echo "backing up $filename"
-            cp -rf "$filename" "$BACKUP_DIR"
         else
             warning "$filename does not exist at this location or is a symlink"
         fi
@@ -113,7 +116,7 @@ setup_git() {
     git config -f ~/.gitconfig-local user.email "${email:-$defaultEmail}"
     git config -f ~/.gitconfig-local github.user "${github:-$defaultGithub}"
 
-    if [[ "$(uname)" == "Darwin" ]]; then
+    if is_macos; then
         git config --global credential.helper "osxkeychain"
     else
         read -rn 1 -p "Save user and password to an unencrypted file to avoid writing? [y/N] " save
@@ -125,61 +128,109 @@ setup_git() {
     fi
 }
 
-setup_homebrew() {
-    title "Setting up Homebrew"
+setup_packages() {
+    title "Setting up packages"
 
-    if test ! "$(command -v brew)"; then
-        info "Homebrew not installed. Installing."
-        # Run as a login shell (non-interactive) so that the script doesn't pause for user input
-        curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh | bash --login
+    if is_macos; then
+        info "Detected macOS — using Homebrew"
+
+        if ! command -v brew &>/dev/null; then
+            info "Homebrew not installed. Installing."
+            curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh | bash --login
+        fi
+
+        brew bundle --file="$DOTFILES/Brewfile"
+
+        # install fzf key bindings and completion
+        echo -e
+        info "Installing fzf"
+        "$(brew --prefix)"/opt/fzf/install --key-bindings --completion --no-update-rc --no-bash --no-fish
+
+    elif is_linux; then
+        info "Detected Linux — using apt"
+
+        if ! command -v apt-get &>/dev/null; then
+            error "apt-get not found. This script supports Ubuntu/Debian-based distributions."
+        fi
+
+        # Run the apt packages install script
+        if [ -f "$DOTFILES/scripts/apt-packages.sh" ]; then
+            bash "$DOTFILES/scripts/apt-packages.sh"
+        else
+            error "scripts/apt-packages.sh not found"
+        fi
     fi
-
-    if [ "$(uname)" == "Linux" ]; then
-        test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
-        test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-        test -r ~/.bash_profile && echo "eval \$($(brew --prefix)/bin/brew shellenv)" >>~/.bash_profile
-    fi
-
-    # install brew dependencies from Brewfile
-    brew bundle
-
-    # install fzf
-    echo -e
-    info "Installing fzf"
-    "$(brew --prefix)"/opt/fzf/install --key-bindings --completion --no-update-rc --no-bash --no-fish
-}
-
-fetch_catppuccin_theme() {
-    for palette in frappe latte macchiato mocha; do
-        curl -o "$DOTFILES/config/kitty/themes/catppuccin-$palette.conf" "https://raw.githubusercontent.com/catppuccin/kitty/main/$palette.conf"
-    done
 }
 
 setup_shell() {
     title "Configuring shell"
 
-    [[ -n "$(command -v brew)" ]] && zsh_path="$(brew --prefix)/bin/zsh" || zsh_path="$(which zsh)"
-    if ! grep "$zsh_path" /etc/shells; then
+    if is_macos && command -v brew &>/dev/null; then
+        zsh_path="$(brew --prefix)/bin/zsh"
+    else
+        zsh_path="$(command -v zsh)"
+    fi
+
+    if ! grep -q "$zsh_path" /etc/shells; then
         info "adding $zsh_path to /etc/shells"
         echo "$zsh_path" | sudo tee -a /etc/shells
     fi
 
     if [[ "$SHELL" != "$zsh_path" ]]; then
-        chsh -s "$zsh_path"
+        sudo chsh -s "$zsh_path" "$(whoami)"
         info "default shell changed to $zsh_path"
     fi
 }
 
-function setup_terminfo() {
-    title "Configuring terminfo"
+setup_starship() {
+    title "Setting up Starship prompt"
 
-    info "adding xterm-256color-italic.terminfo"
-    tic -x "$DOTFILES/resources/xterm-256color-italic.terminfo"
+    if command -v starship &>/dev/null; then
+        success "Starship is already installed."
+    else
+        info "Installing Starship..."
+        curl -sS https://starship.rs/install.sh | sh -s -- --yes
+    fi
+}
+
+setup_python() {
+    title "Setting up Python tooling"
+
+    if command -v pyenv &>/dev/null; then
+        success "pyenv is already installed."
+    else
+        info "Installing pyenv..."
+        curl -fsSL https://pyenv.run | bash
+    fi
+
+    if command -v pipx &>/dev/null; then
+        success "pipx is already installed."
+    elif command -v pip3 &>/dev/null; then
+        info "Installing pipx..."
+        pip3 install --user pipx
+    elif command -v pip &>/dev/null; then
+        info "Installing pipx..."
+        pip install --user pipx
+    else
+        warning "pip not found, skipping pipx installation"
+    fi
+}
+
+setup_dotnet() {
+    title "Setting up .NET"
+
+    if command -v dotnet &>/dev/null; then
+        success ".NET is already installed."
+    else
+        info "Installing .NET SDK..."
+        curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel LTS
+        info ".NET installed to ~/.dotnet"
+    fi
 }
 
 setup_macos() {
     title "Configuring macOS"
-    if [[ "$(uname)" == "Darwin" ]]; then
+    if is_macos; then
 
         echo "Finder: show all filename extensions"
         defaults write NSGlobalDomain AppleShowAllExtensions -bool true
@@ -234,72 +285,63 @@ setup_macos() {
     fi
 }
 
-# Check for Zinit and install it if needed
 setup_zinit() {
-  title "Setting up Zinit plugin manager"
-  
-  ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
-  if [[ ! -d "$ZINIT_HOME" ]]; then
-    info "Installing Zinit..."
-    mkdir -p "$(dirname $ZINIT_HOME)"
-    git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
-    success "Zinit installed successfully!"
-  else
-    success "Zinit is already installed."
-  fi
+    title "Setting up Zinit plugin manager"
+
+    ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+    if [[ ! -d "$ZINIT_HOME" ]]; then
+        info "Installing Zinit..."
+        mkdir -p "$(dirname "$ZINIT_HOME")"
+        git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+        success "Zinit installed successfully!"
+    else
+        success "Zinit is already installed."
+    fi
 }
-
-# look for all .zsh files and source them, skipping zinit-installer.zsh
-config_files=($DOTFILES/**/*.zsh)
-for file in $config_files[@]; do
-  # Skip installer script and old plugin files that might conflict with Zinit
-  if [[ "$file" != "$ZSH/zinit-installer.zsh" && 
-        "$file" != *"/powerlevel10k.zsh-theme" && 
-        "$file" != *"/plugins/"* ]]; then
-    source "$file"
-  fi
-done
-
-setup_zinit
 
 case "$1" in
     backup)
         backup
         ;;
-    link)
+    link|symlink)
         setup_symlinks
         ;;
     git)
         setup_git
         ;;
-    homebrew)
-        setup_homebrew
+    packages)
+        setup_packages
         ;;
     shell)
         setup_shell
         ;;
-    terminfo)
-        setup_terminfo
+    starship)
+        setup_starship
+        ;;
+    python)
+        setup_python
+        ;;
+    dotnet)
+        setup_dotnet
         ;;
     macos)
         setup_macos
         ;;
-    catppuccin)
-        fetch_catppuccin_theme
-        ;;
-    symlink)
-        setup_symlinks
-        ;;
     all)
         setup_symlinks
-        setup_terminfo
-        setup_homebrew
+        setup_packages
         setup_shell
+        setup_zinit
+        setup_starship
+        setup_python
+        setup_dotnet
         setup_git
-        setup_macos
+        if is_macos; then
+            setup_macos
+        fi
         ;;
     *)
-        echo -e $"\nUsage: $(basename "$0") {backup|link|git|homebrew|shell|terminfo|macos|symlink|all}\n"
+        echo -e $"\nUsage: $(basename "$0") {backup|link|git|packages|shell|starship|python|dotnet|macos|all}\n"
         exit 1
         ;;
 esac

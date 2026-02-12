@@ -4,14 +4,16 @@
 
 export DOTFILES="$(dirname "$(dirname "$(readlink "${(%):-%N}")")")"
 export CACHEDIR="$HOME/.local/share"
-export VIM_TMP="$HOME/.vim-tmp"
 # Cache brew prefix to avoid calling brew --prefix repeatedly
 export BREW_PREFIX=""
 # add a config file for ripgrep
 export RIPGREP_CONFIG_PATH="$HOME/.config/ripgrep/config"
+# Starship config path
+export STARSHIP_CONFIG="$DOTFILES/config/starship/starship.toml"
+# .NET
+export DOTNET_ROOT="$HOME/.dotnet"
 
 [[ -d "$CACHEDIR" ]] || mkdir -p "$CACHEDIR"
-[[ -d "$VIM_TMP" ]] || mkdir -p "$VIM_TMP"
 
 [[ -f ~/.zshenv.local ]] && source ~/.zshenv.local
 
@@ -22,6 +24,16 @@ fpath=(
 )
 
 typeset -aU path
+
+# pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d "$PYENV_ROOT/bin" ]] && path=("$PYENV_ROOT/bin" $path)
+
+# .NET tools
+[[ -d "$DOTNET_ROOT" ]] && path=("$DOTNET_ROOT" "$DOTNET_ROOT/tools" $path)
+
+# local bin
+[[ -d "$HOME/.local/bin" ]] && path=("$HOME/.local/bin" $path)
 
 export EDITOR='nano'
 export GIT_EDITOR='nano'

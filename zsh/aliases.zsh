@@ -14,23 +14,24 @@ alias du='du -h -c' # calculate disk usage for a folder
 
 alias lpath='echo $PATH | tr ":" "\n"' # list the PATH separated by new lines
 
-# Applications
-alias ios='open -a /Applications/Xcode.app/Contents/Developer/Applications/Simulator.app'
+# Cross-platform clipboard
+if [[ "$(uname)" == "Darwin" ]]; then
+    : # pbcopy/pbpaste are native on macOS
+elif command -v wl-copy &>/dev/null; then
+    alias pbcopy='wl-copy'
+    alias pbpaste='wl-paste'
+elif command -v xclip &>/dev/null; then
+    alias pbcopy='xclip -selection clipboard'
+    alias pbpaste='xclip -selection clipboard -o'
+fi
 
-# Hide/show all desktop icons (useful when presenting)
-alias hidedesktop="defaults write com.apple.finder CreateDesktop -bool false && killall Finder"
-alias showdesktop="defaults write com.apple.finder CreateDesktop -bool true && killall Finder"
-
-# Recursively delete `.DS_Store` files
-alias cleanup="find . -name '*.DS_Store' -type f -ls -delete"
 # remove broken symlinks
 alias clsym="find -L . -name . -o -type d -prune -o -type l -exec rm {} +"
 
-
-# use exa if available
-if [[ -x "$(command -v exa)" ]]; then
-  alias ll="exa --icons --git --long"
-  alias l="exa --icons --git --all --long"
+# use eza if available
+if command -v eza &>/dev/null; then
+  alias ll="eza --icons --git --long"
+  alias l="eza --icons --git --all --long"
 else
   alias l="ls -lah ${colorflag}"
   alias ll="ls -lFh ${colorflag}"

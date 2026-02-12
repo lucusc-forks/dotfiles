@@ -1,14 +1,6 @@
 # vim:ft=ruby
 
 if OS.mac?
-    # taps
-    tap "homebrew/cask"
-    tap "homebrew/cask-fonts"
-    tap "koekeishiya/formulae"
-
-    brew "noti" # utility to display notifications from scripts
-    brew "trash" # rm, but put in the trash rather than completely delete
-
     # Applications
     cask "obsidian" # second brain
     cask "imageoptim" # a tool to optimize images
@@ -33,23 +25,17 @@ elsif OS.linux?
 end
 
 tap "homebrew/bundle"
-tap "homebrew/core"
 
 # packages
 brew "bat" # better cat
 brew "cloc" # lines of code counter
 brew "entr" # file watcher / command runner
-brew "exa" # ls alternative
+brew "eza" # ls alternative (replacement for exa)
 brew "fd" # find alternative
 
 # node
 brew "fnm" # Fast Node version manager
 brew "yarn" # package manager
-
-# vim
-# brew "neofetch" # pretty system info
-# brew "neovim" # A better vim
-# brew "vim" # Vim (latest)
 
 # git and friends
 brew "gh" # GitHub CLI
@@ -64,6 +50,7 @@ brew "zoxide" # switch between most used directories
 brew "fzf" # Fuzzy file searcher, used in scripts and in vim
 brew "zsh" # zsh (latest)
 brew "htop" # a top alternative
+brew "btop" # a modern top alternative
 brew "bitwarden-cli" # bitwarden cli
 
 brew "glow" # markdown viewer
@@ -78,6 +65,11 @@ brew "wget" # internet file retriever
 
 # languages
 brew "python" # python (latest)
+brew "pyenv" # python version manager
+brew "pipx" # install python CLI tools in isolated environments
+
+# prompt
+brew "starship" # cross-shell prompt
 
 # Docker
-brew dive # a tool for exploring each layer in a docker image
+brew "dive" # a tool for exploring each layer in a docker image

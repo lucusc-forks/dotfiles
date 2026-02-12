@@ -12,10 +12,6 @@ Thumbs.db
 .Spotlight-V100
 .Trashes
 
-# project-specific vim configurations
-.vimrc.local
-.vim/coc-settings.json
-
 # typescript command garbage
 tscommand*.txt
 

@@ -1,15 +1,7 @@
 # Uncomment to profile zsh startup time
 # zmodload zsh/zprof
 
-# Absolute essentials first (set environment variables needed by p10k instant prompt)
 export ZSH=$DOTFILES/zsh
-
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
 
 # Load essential functions that don't involve user interaction
 if [[ -d $DOTFILES/zsh/functions ]]; then
@@ -24,11 +16,7 @@ fi
 
 # initialize autocomplete with caching
 autoload -U compinit add-zsh-hook
-if [ $(date +'%j') != $(stat -f '%Sm' -t '%j' ~/.zcompdump 2>/dev/null) ]; then
-  compinit
-else
-  compinit -C
-fi
+compinit -C
 
 prepend_path /usr/local/opt/grep/libexec/gnubin
 prepend_path /usr/local/sbin
@@ -112,30 +100,16 @@ zstyle ':completion:*' group-name ''
 # Define Zinit home directory
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
-# Source Zinit if it exists, otherwise try to install it
+# Source Zinit if it exists
 if [[ -d "$ZINIT_HOME" ]]; then
   source "${ZINIT_HOME}/zinit.zsh"
 else
-  # Try to install Zinit
-  if [[ -f "$ZSH/zinit-installer.zsh" ]]; then
-    source "$ZSH/zinit-installer.zsh"
-    # If installation was successful, source Zinit
-    if [[ -d "$ZINIT_HOME" ]]; then
-      source "${ZINIT_HOME}/zinit.zsh"
-    else
-      echo "Failed to install Zinit. Please install manually."
-    fi
-  else
-    echo "Zinit installer not found. Please run: zsh $ZSH/zinit-installer.zsh"
-  fi
+  echo "Zinit not found. Run: ./install.sh all"
 fi
 
 # Only proceed with Zinit plugin loading if Zinit is available
 if (( ${+functions[zinit]} )); then
-  # Load fast plugins that don't need to be deferred
-  zinit light mafredri/zsh-async
-  
-  # Load the rest of the plugins with turbo mode (deferred loading)
+  # Load plugins with turbo mode (deferred loading)
   zinit ice wait lucid
   zinit light zsh-users/zsh-syntax-highlighting
   
@@ -145,16 +119,16 @@ if (( ${+functions[zinit]} )); then
   zinit ice wait lucid
   zinit light grigorii-zander/zsh-npm-scripts-autocomplete
   
-  # Powerlevel10k theme
-  zinit ice depth=1
-  zinit light romkatv/powerlevel10k
+fi
+
+# Starship prompt
+if command -v starship &>/dev/null; then
+    eval "$(starship init zsh)"
 fi
 
 if [[ -x "$(command -v fnm)" ]]; then
     eval "$(fnm env --use-on-cd)"
 fi
-
-[[ -e ~/.terminfo ]] && export TERMINFO_DIRS=~/.terminfo:/usr/share/terminfo
 
 ########################################################
 # Setup
@@ -164,8 +138,17 @@ if [ -f $HOME/.fzf.zsh ]; then
   source $HOME/.fzf.zsh
   export FZF_DEFAULT_COMMAND='fd --type f'
   export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-  export FZF_DEFAULT_OPTS="--color bg:-1,bg+:-1,fg:-1,fg+:#feffff,hl:#993f84,hl+:#d256b5,info:#676767,prompt:#676767,pointer:#676767"
 fi
+
+# Catppuccin Mocha fzf colors
+export FZF_DEFAULT_OPTS=" \
+  --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8 \
+  --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
+  --color=marker:#b4befe,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8 \
+  --color=selected-bg:#45475a"
+
+# bat Catppuccin theme
+export BAT_THEME="Catppuccin Mocha"
 
 # add color to man pages
 export MANROFFOPT='-c'
@@ -197,12 +180,11 @@ else # macOS `ls`
     colorflag="-G"
 fi
 
-# look for all .zsh files and source them, skipping zinit-installer.zsh
+# look for all .zsh files and source them
 config_files=($DOTFILES/**/*.zsh)
 for file in $config_files[@]; do
-  # Skip installer script and old plugin files that might conflict with Zinit
-  if [[ "$file" != "$ZSH/zinit-installer.zsh" && 
-        "$file" != *"/plugins/"* ]]; then
+  # Skip old plugin files that might conflict with Zinit
+  if [[ "$file" != *"/plugins/"* ]]; then
     source "$file"
   fi
 done
@@ -211,57 +193,6 @@ done
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 # If a ~/.localrc zshrc exists, source it
 [[ -a ~/.localrc ]] && source ~/.localrc
-
-# pnpm
-export PNPM_HOME="/Users/lucuscrawford/Library/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
-
-# Setup lazy loading for NVM to improve shell startup time
-export NVM_DIR="$HOME/.nvm"
-
-# Lazy-load NVM
-nvm() {
-  unset -f nvm node npm npx
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  nvm "$@"
-}
-
-# Lazy-load node
-node() {
-  unset -f nvm node npm npx
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  node "$@"
-}
-
-# Lazy-load npm
-npm() {
-  unset -f nvm node npm npx
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  npm "$@"
-}
-
-# Lazy-load npx
-npx() {
-  unset -f nvm node npm npx
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-  npx "$@"
-}
-
-# Golang environment variables
-export GOPATH=$HOME/go
-export PATH=$GOPATH/bin:$GOROOT/bin:$HOME/.local/bin:$PATH:
-
-# Lazy-load Azure CLI completions
-az() {
-  unset -f az
-  autoload bashcompinit && bashcompinit
-  source "$BREW_PREFIX/etc/bash_completion.d/az"
-  az "$@"
-}
 
 # Uncomment to display zsh profiling information
 # [[ ${ZPROF:-} = true ]] && zprof

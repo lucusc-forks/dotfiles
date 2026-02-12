@@ -1,6 +1,17 @@
 #!/usr/bin/env zsh
 
-[[ -z $1 ]] && BRANCH=$( git rev-parse --apprev-ref HEAD ) || BRANCH=$1
+[[ -z $1 ]] && BRANCH=$( git rev-parse --abbrev-ref HEAD ) || BRANCH=$1
 LAST_COMMIT_SHA=$( git rev-parse $BRANCH | tail -n 1 )
-echo "$LAST_COMMIT_SHA" | tr -d '\n' | pbcopy
+
+if [[ "$(uname)" == "Darwin" ]]; then
+    echo "$LAST_COMMIT_SHA" | tr -d '\n' | pbcopy
+elif command -v wl-copy &>/dev/null; then
+    echo "$LAST_COMMIT_SHA" | tr -d '\n' | wl-copy
+elif command -v xclip &>/dev/null; then
+    echo "$LAST_COMMIT_SHA" | tr -d '\n' | xclip -selection clipboard
+else
+    echo "No clipboard utility found. SHA: ${LAST_COMMIT_SHA}"
+    exit 1
+fi
+
 echo "Copied ${LAST_COMMIT_SHA}."

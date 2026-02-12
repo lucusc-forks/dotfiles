@@ -1,29 +1,35 @@
-FROM ubuntu
+FROM ubuntu:24.04
 
-# Install dependencies
-RUN apt-get update
-RUN apt-get install -y build-essential file zsh git sudo ruby curl vim language-pack-en
+# Prevent interactive prompts during apt-get install (e.g. tzdata)
+ENV DEBIAN_FRONTEND=noninteractive
+ARG TZ=America/Denver
+ENV TZ=${TZ}
 
-# take an SSH key as a build argument
-ARG PRIVATE_KEY
-ARG PUBLIC_KEY
+# Install minimal dependencies needed for install.sh
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    wget \
+    sudo \
+    zsh \
+    build-essential \
+    file \
+    locales \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up locale
+RUN locale-gen en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 # Create a test user
-RUN useradd -ms /bin/bash user && \
-        echo "user ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/user && \
-        chmod 0440 /etc/sudoers.d/user
+RUN useradd -ms /bin/zsh user && \
+    echo "user ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/user && \
+    chmod 0440 /etc/sudoers.d/user
 
 USER user:user
-
 WORKDIR /home/user
-RUN touch .bash_profile
-RUN mkdir -p .ssh
-RUN echo "$PRIVATE_KEY" > .ssh/id_rsa
-RUN echo "$PUBLIC_KEY" > .ssh/id_rsa.pub
-RUN chmod 600 .ssh/id_rsa
-RUN chmod 600 .ssh/id_rsa.pub
-RUN ssh-keyscan github.com >> .ssh/known_hosts
 
-RUN mkdir -p code
+# Copy dotfiles into the container
+COPY --chown=user:user . /home/user/dotfiles
 
-CMD ["/bin/bash"]
+CMD ["/bin/zsh"]

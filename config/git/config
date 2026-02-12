@@ -1,4 +1,3 @@
-# vim:ft=gitconfig
 [init]
     defaultBranch = main
 [include]
@@ -141,7 +140,7 @@
     whitespace = nowarn
 [core]
     pager = delta
-    editor = vim
+    editor = nano
     whitespace = cr-at-eol
 [delta]
     features = unobtrusive-line-numbers decorations
@@ -168,8 +167,8 @@
 [grep]
     extendRegexp = true
     lineNumber = true
-[credential]
-	helper = osxkeychain
 [rebase]
     instructionFormat = "[%an - %ar] %s"
     autoStash = true
+[credential]
+	helper = store
