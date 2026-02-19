@@ -84,6 +84,12 @@ symbol = " "
 style = "blue"
 format = "[$symbol$context]($style) "
 
+[azure]
+disabled = false
+format = 'on [$symbol($subscription)]($style) '
+symbol = '󰠅 '
+style = 'blue bold'
+
 [cmd_duration]
 min_time = 3_000
 show_milliseconds = false
