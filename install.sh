@@ -299,6 +299,33 @@ setup_zinit() {
     fi
 }
 
+setup_systemd_ssh_agent() {
+    if ! is_linux; then
+        warning "systemd SSH agent setup is only supported on Linux. Skipping."
+        return 0
+    fi
+
+    title "Setting up systemd SSH agent"
+
+    SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
+    mkdir -p "$SYSTEMD_USER_DIR"
+
+    if [ -d "$DOTFILES/config/systemd/user" ]; then
+        info "Symlinking systemd units"
+        for unit in "$DOTFILES/config/systemd/user"/*; do
+            target="$SYSTEMD_USER_DIR/$(basename "$unit")"
+            ln -sfn "$unit" "$target"
+        done
+        
+        info "Enabling SSH agent systemd user service"
+        systemctl --user daemon-reload
+        systemctl --user enable --now ssh-agent
+        success "SSH agent service enabled"
+    else
+        warning "systemd/user directory not found in dotfiles"
+    fi
+}
+
 case "$1" in
     backup)
         backup
@@ -327,8 +354,12 @@ case "$1" in
     macos)
         setup_macos
         ;;
+    ssh-agent|systemd-ssh)
+        setup_systemd_ssh_agent
+        ;;
     all)
         setup_symlinks
+        setup_systemd_ssh_agent
         setup_packages
         setup_shell
         setup_zinit
@@ -341,7 +372,7 @@ case "$1" in
         fi
         ;;
     *)
-        echo -e $"\nUsage: $(basename "$0") {backup|link|git|packages|shell|starship|python|dotnet|macos|all}\n"
+        echo -e $"\nUsage: $(basename "$0") {backup|link|git|packages|shell|starship|python|dotnet|macos|ssh-agent|all}\n"
         exit 1
         ;;
 esac

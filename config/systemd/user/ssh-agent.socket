@@ -1,0 +1,11 @@
+[Unit]
+Description=SSH key agent socket
+Documentation=man:ssh-agent(1)
+
+[Socket]
+ListenStream=%t/ssh-agent.socket
+Accept=no
+RemoveOnStop=yes
+
+[Install]
+WantedBy=sockets.target
