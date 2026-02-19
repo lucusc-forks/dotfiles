@@ -47,8 +47,44 @@ cd dotfiles
 | `python` | Install pyenv and pipx |
 | `dotnet` | Install .NET SDK |
 | `git` | Configure git identity (`~/.gitconfig-local`) |
+| `ssh-agent` | Enable systemd SSH agent service (Linux only) |
 | `macos` | Apply macOS `defaults write` preferences |
 | `all` | Run all of the above in order |
+
+## SSH Agent Setup
+
+On **Linux**, the installer configures a systemd user service to auto-start SSH agent on login. Keys are automatically added from `~/.config/ssh-keys`.
+
+### Configuration
+
+**Default keys** — Edit `~/.config/ssh-keys`:
+```
+~/.ssh/github/id_personal
+~/.ssh/work/id_rsa
+~/.ssh/custom/id_ed25519
+```
+
+One key path per line. Lines starting with `#` are comments; empty lines are ignored. Tilde (`~`) expands to your home directory.
+
+**Local overrides** — Create `~/.config/ssh-keys.local` (not tracked by git):
+```
+~/.ssh/local-only/id_rsa
+~/.ssh/temporary/key
+```
+
+Both files are processed on shell startup; keys are auto-added if none are in the agent.
+
+### How It Works
+
+1. `~/.ssh/ssh-agent.service` (systemd) starts ssh-agent at login with socket at `$XDG_RUNTIME_DIR/ssh-agent.socket`
+2. `zsh/ssh-agent.zsh` exports `SSH_AUTH_SOCK` and auto-loads keys from `ssh-keys` and `ssh-keys.local`
+3. Git, SSH, and other tools automatically use the agent
+
+**Check status:**
+```bash
+systemctl --user status ssh-agent
+ssh-add -l  # List loaded keys
+```
 
 ## What's Included
 
@@ -105,12 +141,17 @@ Applied consistently across:
 ├── config/           # Symlinked to ~/.config/
 │   ├── git/          # Git config, aliases, ignore
 │   ├── ripgrep/      # Ripgrep config
+│   ├── ssh-keys      # SSH keys to auto-load on login
 │   ├── starship/     # Starship prompt config (TOML)
+│   ├── systemd/
+│   │   └── user/     # Systemd user services (Linux)
+│   │       └── ssh-agent.service  # SSH agent service
 │   └── wezterm/      # WezTerm terminal config (Lua)
 ├── scripts/          # Install helper scripts (apt-packages.sh)
 ├── zsh/              # Zsh config files
 │   ├── aliases.zsh   # Shell aliases
 │   ├── functions/    # Autoloaded zsh functions
+│   ├── ssh-agent.zsh # SSH agent setup (Linux)
 │   ├── zshenv.symlink
 │   ├── zprofile.symlink
 │   └── zshrc.symlink

@@ -1,0 +1,5 @@
+# SSH keys to auto-load
+# List key paths (relative to home directory), one per line
+# Empty lines and lines starting with # are ignored
+
+~/.ssh/github/id_personal
