@@ -25,16 +25,93 @@ sudo apt-get update && sudo apt-get install -y git curl
 
 ## Quick Start
 
+Full setup for a brand new system — from zero to working dev environment.
+
+### 1. Generate SSH keys
+
+Create separate SSH keys for personal and work GitHub accounts:
+
 ```bash
-git clone git@github.com:lucrawford/dotfiles.git
-cd dotfiles
+mkdir -p ~/.ssh/github
+
+# Personal key
+ssh-keygen -t ed25519 -C "your-personal@email.com" -f ~/.ssh/github/id_personal
+
+# Work key
+ssh-keygen -t ed25519 -C "your-work@email.com" -f ~/.ssh/github/id_work
+```
+
+### 2. Add keys to GitHub
+
+Copy each public key and add it to the corresponding GitHub account under **Settings → SSH and GPG keys → New SSH key**:
+
+```bash
+cat ~/.ssh/github/id_personal.pub   # → add to personal GitHub account
+cat ~/.ssh/github/id_work.pub       # → add to work GitHub account
+```
+
+### 3. Clone the dotfiles repo
+
+Use the personal SSH Host alias (configured by the dotfiles) — but since it isn't set up yet, use the default host for the initial clone:
+
+```bash
+git clone git@github.com:lucrawford/dotfiles.git ~/dev/personal/dotfiles
+cd ~/dev/personal/dotfiles
+```
+
+### 4. Run the installer
+
+```bash
 ./install.sh all
+```
+
+This will:
+- Create symlinks (`*.symlink` → `~/.*`, `config/*` → `~/.config/*`)
+- Create `~/dev/personal/` and `~/dev/work/` directories
+- Symlink SSH config to `~/.ssh/config` (with Host aliases for personal/work)
+- Enable the systemd SSH agent (Linux)
+- Install packages (Homebrew on macOS, apt on Linux)
+- Set Zsh as default shell
+- Install Starship, pyenv, pipx, .NET SDK
+- Prompt for git name and GitHub username (written to `~/.gitconfig-local`)
+
+### 5. Verify SSH connectivity
+
+```bash
+ssh -T github.com-personal   # Hi <username>! You've successfully authenticated...
+ssh -T github.com-work        # Hi <username>! You've successfully authenticated...
+```
+
+### 6. Start cloning repos
+
+```bash
+# Personal repos
+gcp user/repo                 # → clones to ~/dev/personal/repo
+
+# Work repos
+gcw org/repo                  # → clones to ~/dev/work/repo
+```
+
+### 7. (Optional) Add a client namespace
+
+```bash
+# Generate an SSH key for the client
+ssh-keygen -t ed25519 -C "you@clienta.com" -f ~/.ssh/github/id_clienta
+
+# Add the public key to the client's GitHub account
+cat ~/.ssh/github/id_clienta.pub
+
+# Scaffold the namespace (creates dir, git config, SSH alias, ssh-keys entry)
+git ns add clienta --email you@clienta.com --key ~/.ssh/github/id_clienta
+
+# Clone client repos
+git clone-as clienta org/repo
 ```
 
 ## Install Commands
 
 ```bash
-./install.sh {backup|link|git|packages|shell|starship|python|dotnet|macos|all}
+./install.sh {backup|link|git|packages|shell|starship|python|dotnet|macos|ssh-agent|ssh-config|dev-dirs|all}
 ```
 
 | Command | Description |
@@ -48,8 +125,78 @@ cd dotfiles
 | `dotnet` | Install .NET SDK |
 | `git` | Configure git identity (`~/.gitconfig-local`) |
 | `ssh-agent` | Enable systemd SSH agent service (Linux only) |
+| `ssh-config` | Symlink SSH config to `~/.ssh/config` |
+| `dev-dirs` | Create `~/dev/personal/` and `~/dev/work/` directories |
 | `macos` | Apply macOS `defaults write` preferences |
 | `all` | Run all of the above in order |
+
+## Git Multi-Identity Setup
+
+Repos automatically use the correct git email based on which directory they're in — no manual switching needed.
+
+### How it works
+
+1. **Directory-based identity switching** — Git's `includeIf "gitdir:"` loads identity fragments per namespace:
+   - Repos in `~/dev/personal/` → `config/git/config-personal` (personal email)
+   - Repos in `~/dev/work/` → `config/git/config-work` (work email)
+
+2. **SSH Host aliases** — Each namespace maps to an SSH Host alias in `~/.ssh/config` that routes to a specific SSH key:
+   - `github.com-personal` → `~/.ssh/github/id_personal`
+   - `github.com-work` → `~/.ssh/github/id_work`
+
+3. **Pure SSH** — No credential manager needed. The SSH agent loads all keys on login, and Host aliases ensure the right key is used automatically.
+
+### Verify identity per directory
+
+```bash
+cd ~/dev/personal/some-repo
+git config user.email   # → personal email
+
+cd ~/dev/work/some-repo
+git config user.email   # → work email
+```
+
+### Clone helpers
+
+| Command | Alias | Description |
+|---------|-------|-------------|
+| `git clone-as personal user/repo` | `gcp user/repo` | Clone to `~/dev/personal/repo` using personal SSH key |
+| `git clone-as work org/repo` | `gcw org/repo` | Clone to `~/dev/work/repo` using work SSH key |
+
+`git clone-as` supports additional flags:
+- `--dir <path>` — Override destination directory
+- `--bare` — Use bare clone for worktree workflows (delegates to `git-bare-clone`)
+- `--host <hostname>` — Use a different Git host (default: `github.com`)
+
+### Namespace management
+
+Add new namespaces (e.g., a new client) with a single command:
+
+```bash
+git ns add clienta --email you@clienta.com
+```
+
+This creates:
+- `~/dev/clienta/` directory
+- `config/git/config-clienta` identity fragment
+- SSH Host alias `github.com-clienta` in SSH config
+- Entry in `config/ssh-keys` for SSH agent auto-loading
+
+```bash
+git ns list   # Show all configured namespaces with their emails, SSH hosts, and keys
+```
+
+### Files involved
+
+| File | Purpose |
+|------|---------|
+| `config/git/config` | Base git config with `includeIf` directives |
+| `config/git/config-personal` | `[user] email` for personal repos |
+| `config/git/config-work` | `[user] email` for work repos |
+| `config/ssh/config` | SSH Host aliases (symlinked to `~/.ssh/config`) |
+| `config/ssh-keys` | SSH key paths for agent auto-loading |
+| `~/.gitconfig-local` | Machine-local git identity (`user.name`, `github.user`) |
+| `~/.ssh/config.local` | Machine-local SSH overrides (not tracked) |
 
 ## SSH Agent Setup
 
@@ -57,11 +204,10 @@ On **Linux**, the installer configures a systemd user service to auto-start SSH 
 
 ### Configuration
 
-**Default keys** — Edit `~/.config/ssh-keys`:
+**Default keys** — Edit `config/ssh-keys` (symlinked to `~/.config/ssh-keys`):
 ```
 ~/.ssh/github/id_personal
-~/.ssh/work/id_rsa
-~/.ssh/custom/id_ed25519
+~/.ssh/github/id_work
 ```
 
 One key path per line. Lines starting with `#` are comments; empty lines are ignored. Tilde (`~`) expands to your home directory.
@@ -69,14 +215,13 @@ One key path per line. Lines starting with `#` are comments; empty lines are ign
 **Local overrides** — Create `~/.config/ssh-keys.local` (not tracked by git):
 ```
 ~/.ssh/local-only/id_rsa
-~/.ssh/temporary/key
 ```
 
 Both files are processed on shell startup; keys are auto-added if none are in the agent.
 
 ### How It Works
 
-1. `~/.ssh/ssh-agent.service` (systemd) starts ssh-agent at login with socket at `$XDG_RUNTIME_DIR/ssh-agent.socket`
+1. `ssh-agent.service` (systemd) starts ssh-agent at login with socket at `$XDG_RUNTIME_DIR/ssh-agent.socket`
 2. `zsh/ssh-agent.zsh` exports `SSH_AUTH_SOCK` and auto-loads keys from `ssh-keys` and `ssh-keys.local`
 3. Git, SSH, and other tools automatically use the agent
 
@@ -132,15 +277,24 @@ Applied consistently across:
 | `wtfport` | Print the PID of the process on a given port |
 | `git-bare-clone` | Clone as bare repo for worktree workflows |
 | `git-clc` | Copy last commit SHA to clipboard (cross-platform) |
+| `git-clone-as` | Clone repos using a specific namespace's SSH key |
 | `git-kill` | Delete branches locally and from all remotes |
+| `git-ns` | Add/list git identity namespaces (directory, SSH alias, config) |
 
 ## Directory Structure
 
 ```
 ├── bin/              # Scripts added to $PATH
 ├── config/           # Symlinked to ~/.config/
-│   ├── git/          # Git config, aliases, ignore
+│   ├── git/          # Git config, aliases, ignore, identity fragments
+│   │   ├── config              # Base git config (includeIf directives)
+│   │   ├── config-personal     # [user] email for personal repos
+│   │   ├── config-work         # [user] email for work repos
+│   │   ├── aliases.zsh         # Git shell aliases (gs, glog, gcp, gcw)
+│   │   └── ignore              # Global gitignore
 │   ├── ripgrep/      # Ripgrep config
+│   ├── ssh/          # SSH config (symlinked to ~/.ssh/config)
+│   │   └── config              # Host aliases for multi-account GitHub
 │   ├── ssh-keys      # SSH keys to auto-load on login
 │   ├── starship/     # Starship prompt config (TOML)
 │   ├── systemd/
