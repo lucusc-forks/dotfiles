@@ -101,31 +101,63 @@ setup_symlinks() {
     done
 }
 
+setup_dev_dirs() {
+    title "Setting up dev directories"
+
+    for dir in "$HOME/dev/personal" "$HOME/dev/work"; do
+        if [ -d "$dir" ]; then
+            success "$dir already exists"
+        else
+            info "Creating $dir"
+            mkdir -p "$dir"
+        fi
+    done
+}
+
+setup_ssh_config() {
+    title "Setting up SSH config"
+
+    if [ ! -d "$HOME/.ssh" ]; then
+        info "Creating ~/.ssh"
+        mkdir -p "$HOME/.ssh"
+        chmod 700 "$HOME/.ssh"
+    fi
+
+    # Symlink dotfiles-managed SSH config
+    if [ -f "$DOTFILES/config/ssh/config" ]; then
+        info "Linking SSH config"
+        ln -sfn "$DOTFILES/config/ssh/config" "$HOME/.ssh/config"
+        chmod 600 "$HOME/.ssh/config"
+        success "SSH config linked"
+    else
+        warning "config/ssh/config not found in dotfiles"
+    fi
+
+    # Create local SSH config if it doesn't exist
+    if [ ! -f "$HOME/.ssh/config.local" ]; then
+        info "Creating empty ~/.ssh/config.local for machine-specific overrides"
+        touch "$HOME/.ssh/config.local"
+        chmod 600 "$HOME/.ssh/config.local"
+    fi
+}
+
 setup_git() {
     title "Setting up Git"
 
     defaultName=$(git config user.name)
-    defaultEmail=$(git config user.email)
     defaultGithub=$(git config github.user)
 
     read -rp "Name [$defaultName] " name
-    read -rp "Email [$defaultEmail] " email
     read -rp "Github username [$defaultGithub] " github
 
     git config -f ~/.gitconfig-local user.name "${name:-$defaultName}"
-    git config -f ~/.gitconfig-local user.email "${email:-$defaultEmail}"
     git config -f ~/.gitconfig-local github.user "${github:-$defaultGithub}"
 
-    if is_macos; then
-        git config --global credential.helper "osxkeychain"
-    else
-        read -rn 1 -p "Save user and password to an unencrypted file to avoid writing? [y/N] " save
-        if [[ $save =~ ^([Yy])$ ]]; then
-            git config --global credential.helper "store"
-        else
-            git config --global credential.helper "cache --timeout 3600"
-        fi
-    fi
+    # Identity emails are managed per-namespace in config/git/config-<ns>
+    # Use includeIf gitdir: directives in config/git/config to switch automatically
+    info "Git identity switching is configured via includeIf directives."
+    info "Edit config/git/config-personal and config/git/config-work to set emails."
+    info "Use 'git ns add <name> --email <email>' to add new namespaces."
 }
 
 setup_packages() {
@@ -357,8 +389,16 @@ case "$1" in
     ssh-agent|systemd-ssh)
         setup_systemd_ssh_agent
         ;;
+    ssh-config)
+        setup_ssh_config
+        ;;
+    dev-dirs)
+        setup_dev_dirs
+        ;;
     all)
         setup_symlinks
+        setup_dev_dirs
+        setup_ssh_config
         setup_systemd_ssh_agent
         setup_packages
         setup_shell
@@ -372,7 +412,7 @@ case "$1" in
         fi
         ;;
     *)
-        echo -e $"\nUsage: $(basename "$0") {backup|link|git|packages|shell|starship|python|dotnet|macos|ssh-agent|all}\n"
+        echo -e $"\nUsage: $(basename "$0") {backup|link|git|packages|shell|starship|python|dotnet|macos|ssh-agent|ssh-config|dev-dirs|all}\n"
         exit 1
         ;;
 esac

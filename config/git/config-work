@@ -1,0 +1,4 @@
+# Git identity for work repos (~/dev/work/)
+# Managed by dotfiles — edit directly or via `git ns`
+[user]
+    email = lucus.crawford@microsoft.com

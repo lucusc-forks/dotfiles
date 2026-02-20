@@ -170,5 +170,11 @@
 [rebase]
     instructionFormat = "[%an - %ar] %s"
     autoStash = true
-[credential]
-	helper = store
+
+# Directory-based identity switching
+# Each includeIf loads an identity fragment with the correct user.email
+# Use `git ns add <name> --email <email>` to add new namespaces
+[includeIf "gitdir:~/dev/personal/"]
+    path = ~/.config/git/config-personal
+[includeIf "gitdir:~/dev/work/"]
+    path = ~/.config/git/config-work

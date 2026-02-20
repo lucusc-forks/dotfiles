@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+trap cleanup SIGINT SIGTERM ERR EXIT
+
+usage() {
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] <namespace> <repo>
+
+Clone a repo using the correct SSH Host alias for a given namespace and place
+it in ~/dev/<namespace>/.
+
+The namespace maps to an SSH Host alias (e.g. "personal" → github.com-personal)
+configured in ~/.ssh/config. This ensures the correct SSH key is used.
+
+Arguments:
+  namespace   Git namespace (e.g. personal, work, clientA)
+  repo        Repository in owner/name format or a full SSH URL
+
+Available options:
+  -h, --help      Print this help and exit
+  -v, --verbose   Print script debug info
+  -d, --dir       Override destination directory (default: ~/dev/<namespace>/<repo-name>)
+  -b, --bare      Clone as a bare repo for worktree workflows (uses git-bare-clone)
+  --host          Git host (default: github.com)
+
+Examples:
+  git clone-as personal user/repo
+  git clone-as work org/repo
+  git clone-as clientA org/repo --host gitlab.com
+  git clone-as personal user/repo --bare
+EOF
+    exit
+}
+
+cleanup() {
+    trap - SIGINT SIGTERM ERR EXIT
+}
+
+setup_colors() {
+    if [[ -t 2 ]] && [[ -z "${NO_COLOR-}" ]] && [[ "${TERM-}" != "dumb" ]]; then
+        NOFORMAT='\033[0m' RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m'
+    else
+        NOFORMAT='' RED='' GREEN='' YELLOW=''
+    fi
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1}
+    msg "${RED}${msg}${NOFORMAT}"
+    exit "$code"
+}
+
+parse_params() {
+    host="github.com"
+    dest_dir=""
+    bare=false
+
+    while :; do
+        case "${1-}" in
+        -h | --help) usage ;;
+        -v | --verbose) set -x ;;
+        --no-color) NO_COLOR=1 ;;
+        -d | --dir)
+            dest_dir="${2-}"
+            shift
+            ;;
+        --host)
+            host="${2-}"
+            shift
+            ;;
+        -b | --bare) bare=true ;;
+        -?*) die "Unknown option: $1" ;;
+        *) break ;;
+        esac
+        shift
+    done
+
+    args=("$@")
+    [[ ${#args[@]} -lt 2 ]] && die "Missing required arguments: <namespace> <repo>\nRun with --help for usage."
+
+    namespace="${args[0]}"
+    repo="${args[1]}"
+
+    return 0
+}
+
+parse_params "$@"
+setup_colors
+
+# Build the SSH URL using the namespace Host alias
+# e.g. namespace=personal, host=github.com → github.com-personal
+ssh_host="${host}-${namespace}"
+
+# Handle repo argument: either "owner/name" shorthand or full URL
+if [[ "$repo" == git@* ]] || [[ "$repo" == ssh://* ]]; then
+    # Full SSH URL — rewrite the host portion
+    # git@github.com:owner/repo.git → git@github.com-personal:owner/repo.git
+    ssh_url=$(echo "$repo" | sed "s|${host}|${ssh_host}|")
+else
+    # owner/repo shorthand
+    # Ensure .git suffix
+    [[ "$repo" != *.git ]] && repo="${repo}.git"
+    ssh_url="git@${ssh_host}:${repo}"
+fi
+
+# Extract the repo name for the destination directory
+repo_name=$(basename "$repo" .git)
+
+# Determine destination directory
+if [[ -n "$dest_dir" ]]; then
+    target="$dest_dir"
+else
+    target="$HOME/dev/${namespace}/${repo_name}"
+fi
+
+if [[ -d "$target" ]]; then
+    die "Destination already exists: $target"
+fi
+
+# Ensure parent directory exists
+mkdir -p "$(dirname "$target")"
+
+msg "${YELLOW}Cloning ${repo} as namespace '${namespace}'...${NOFORMAT}"
+msg "${YELLOW}SSH URL: ${ssh_url}${NOFORMAT}"
+msg "${YELLOW}Destination: ${target}${NOFORMAT}"
+
+if [[ "$bare" == true ]]; then
+    # Delegate to git-bare-clone for worktree setup
+    mkdir -p "$target"
+    cd "$target"
+    git bare-clone "$ssh_url"
+else
+    git clone "$ssh_url" "$target"
+fi
+
+msg "${GREEN}Successfully cloned to ${target}${NOFORMAT}"

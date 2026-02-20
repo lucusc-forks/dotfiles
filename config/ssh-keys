@@ -3,3 +3,5 @@
 # Empty lines and lines starting with # are ignored
 
 ~/.ssh/github/id_personal
+~/.ssh/github/id_work
+

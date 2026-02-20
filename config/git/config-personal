@@ -1,0 +1,4 @@
+# Git identity for personal repos (~/dev/personal/)
+# Managed by dotfiles — edit directly or via `git ns`
+[user]
+    email = lucusc@gmail.com

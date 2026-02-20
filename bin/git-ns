@@ -1,0 +1,283 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+trap cleanup SIGINT SIGTERM ERR EXIT
+
+# Resolve DOTFILES location (same logic as zshenv)
+DOTFILES="${DOTFILES:-$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)}"
+
+usage() {
+    cat <<EOF
+Usage: $(basename "${BASH_SOURCE[0]}") <command> [options]
+
+Manage git identity namespaces for multi-account SSH workflows.
+
+Commands:
+  add <name>     Add a new namespace (creates dir, git config, SSH alias)
+  list           List configured namespaces
+
+Add options:
+  --email <email>     Email for git commits (required)
+  --key <path>        Path to SSH key (default: ~/.ssh/id_<name>)
+  --host <hostname>   Git host (default: github.com)
+
+Examples:
+  git ns add clientA --email me@clienta.com
+  git ns add clientB --email me@clientb.com --key ~/.ssh/clientb/id_ed25519
+  git ns add work-gl --email me@work.com --host gitlab.com
+  git ns list
+EOF
+    exit
+}
+
+cleanup() {
+    trap - SIGINT SIGTERM ERR EXIT
+}
+
+setup_colors() {
+    if [[ -t 2 ]] && [[ -z "${NO_COLOR-}" ]] && [[ "${TERM-}" != "dumb" ]]; then
+        NOFORMAT='\033[0m' RED='\033[0;31m' GREEN='\033[0;32m' YELLOW='\033[1;33m' BLUE='\033[0;34m'
+    else
+        NOFORMAT='' RED='' GREEN='' YELLOW='' BLUE=''
+    fi
+}
+
+msg() {
+    echo >&2 -e "${1-}"
+}
+
+die() {
+    local msg=$1
+    local code=${2-1}
+    msg "${RED}${msg}${NOFORMAT}"
+    exit "$code"
+}
+
+success() {
+    msg "${GREEN}✓ ${1}${NOFORMAT}"
+}
+
+info() {
+    msg "${BLUE}→ ${1}${NOFORMAT}"
+}
+
+cmd_add() {
+    local name=""
+    local email=""
+    local key=""
+    local host="github.com"
+
+    # Parse the name (first positional arg after "add")
+    if [[ $# -lt 1 ]] || [[ "$1" == --* ]]; then
+        die "Missing namespace name.\nUsage: git ns add <name> --email <email>"
+    fi
+    name="$1"
+    shift
+
+    while :; do
+        case "${1-}" in
+        --email)
+            email="${2-}"
+            shift
+            ;;
+        --key)
+            key="${2-}"
+            shift
+            ;;
+        --host)
+            host="${2-}"
+            shift
+            ;;
+        -?*) die "Unknown option: $1" ;;
+        *) break ;;
+        esac
+        shift
+    done
+
+    [[ -z "$email" ]] && die "Missing required option: --email <email>"
+    [[ -z "$key" ]] && key="~/.ssh/id_${name}"
+
+    local git_config="$DOTFILES/config/git/config"
+    local git_identity="$DOTFILES/config/git/config-${name}"
+    local ssh_config="$DOTFILES/config/ssh/config"
+    local ssh_keys="$DOTFILES/config/ssh-keys"
+    local dev_dir="$HOME/dev/${name}"
+
+    # Validate files exist
+    [[ ! -f "$git_config" ]] && die "Git config not found: $git_config"
+    [[ ! -f "$ssh_config" ]] && die "SSH config not found: $ssh_config"
+
+    # Check for existing namespace
+    if grep -q "gitdir:~/dev/${name}/" "$git_config" 2>/dev/null; then
+        die "Namespace '${name}' already exists in git config"
+    fi
+
+    msg "${YELLOW}Adding namespace '${name}'...${NOFORMAT}"
+    msg ""
+
+    # 1. Create dev directory
+    if [[ -d "$dev_dir" ]]; then
+        info "Directory $dev_dir already exists"
+    else
+        mkdir -p "$dev_dir"
+        success "Created $dev_dir"
+    fi
+
+    # 2. Create git identity fragment
+    if [[ -f "$git_identity" ]]; then
+        info "Git identity config already exists: $git_identity"
+    else
+        cat > "$git_identity" <<GITEOF
+# Git identity for ${name} repos (~/dev/${name}/)
+# Managed by dotfiles — edit directly or via \`git ns\`
+[user]
+    email = ${email}
+GITEOF
+        success "Created git identity: config/git/config-${name}"
+    fi
+
+    # 3. Append includeIf to git config
+    cat >> "$git_config" <<GITEOF
+[includeIf "gitdir:~/dev/${name}/"]
+    path = ~/.config/git/config-${name}
+GITEOF
+    success "Added includeIf directive to git config"
+
+    # 4. Append SSH Host alias to SSH config (before the Host * block)
+    local ssh_host_block
+    ssh_host_block="Host ${host}-${name}
+    HostName ${host}
+    User git
+    IdentityFile ${key}
+    IdentitiesOnly yes"
+
+    # Insert before the "# --- Defaults ---" line, or append if not found
+    if grep -q "^# --- Defaults ---" "$ssh_config" 2>/dev/null; then
+        local tmpfile
+        tmpfile=$(mktemp)
+        while IFS= read -r sline; do
+            if [[ "$sline" == "# --- Defaults ---" ]]; then
+                echo "" >> "$tmpfile"
+                echo "$ssh_host_block" >> "$tmpfile"
+                echo "" >> "$tmpfile"
+            fi
+            echo "$sline" >> "$tmpfile"
+        done < "$ssh_config"
+        mv "$tmpfile" "$ssh_config"
+    else
+        printf '\n%s\n' "$ssh_host_block" >> "$ssh_config"
+    fi
+    success "Added SSH Host alias: ${host}-${name}"
+
+    # 5. Add SSH key to ssh-keys file (if not already there)
+    if grep -qF "$key" "$ssh_keys" 2>/dev/null; then
+        info "SSH key already in ssh-keys: $key"
+    else
+        # Ensure file ends with a newline before appending
+        [[ -s "$ssh_keys" ]] && [[ "$(tail -c 1 "$ssh_keys")" != "" ]] && echo "" >> "$ssh_keys"
+        echo "$key" >> "$ssh_keys"
+        success "Added SSH key to config/ssh-keys: $key"
+    fi
+
+    msg ""
+    msg "${GREEN}Namespace '${name}' configured successfully!${NOFORMAT}"
+    msg ""
+    msg "Summary:"
+    msg "  Directory:    ~/dev/${name}/"
+    msg "  Git email:    ${email}"
+    msg "  SSH Host:     ${host}-${name}"
+    msg "  SSH Key:      ${key}"
+    msg ""
+
+    # Check if SSH key exists
+    local expanded_key="${key/#\~/$HOME}"
+    if [[ ! -f "$expanded_key" ]]; then
+        msg "${YELLOW}⚠ SSH key not found at ${key}${NOFORMAT}"
+        msg "  Generate one with:"
+        msg "    ssh-keygen -t ed25519 -C \"${email}\" -f ${key}"
+        msg "  Then add it to your Git host."
+    fi
+
+    msg ""
+    msg "Clone repos with:"
+    msg "  git clone-as ${name} owner/repo"
+}
+
+cmd_list() {
+    local git_config="$DOTFILES/config/git/config"
+    [[ ! -f "$git_config" ]] && die "Git config not found: $git_config"
+
+    msg "${YELLOW}Configured namespaces:${NOFORMAT}"
+    msg ""
+
+    # Parse includeIf directives to find namespaces
+    local found=false
+    while IFS= read -r line; do
+        if [[ "$line" =~ \[includeIf\ \"gitdir:~/dev/([^/]+)/\"\] ]]; then
+            local ns="${BASH_REMATCH[1]}"
+            local identity_file="$DOTFILES/config/git/config-${ns}"
+            local ns_email="(not configured)"
+
+            if [[ -f "$identity_file" ]]; then
+                ns_email=$(git config -f "$identity_file" user.email 2>/dev/null || echo "(not set)")
+            fi
+
+            # Find matching SSH Host alias
+            local ssh_host="(not found)"
+            local ssh_key="(not found)"
+            local ssh_config="$DOTFILES/config/ssh/config"
+            if [[ -f "$ssh_config" ]]; then
+                # Look for Host *-<namespace> entries
+                local in_block=false
+                while IFS= read -r sline; do
+                    if [[ "$sline" =~ ^Host\ .*-${ns}$ ]]; then
+                        ssh_host="${sline#Host }"
+                        in_block=true
+                    elif [[ "$in_block" == true ]] && [[ "$sline" =~ IdentityFile ]]; then
+                        ssh_key=$(echo "$sline" | awk '{print $2}')
+                        in_block=false
+                    elif [[ "$in_block" == true ]] && [[ "$sline" =~ ^Host\  ]]; then
+                        in_block=false
+                    fi
+                done < "$ssh_config"
+            fi
+
+            local dev_dir="$HOME/dev/${ns}"
+            local dir_status="✗"
+            [[ -d "$dev_dir" ]] && dir_status="✓"
+
+            msg "  ${GREEN}${ns}${NOFORMAT}"
+            msg "    Email:     ${ns_email}"
+            msg "    SSH Host:  ${ssh_host}"
+            msg "    SSH Key:   ${ssh_key}"
+            msg "    Directory: ~/dev/${ns}/ [${dir_status}]"
+            msg ""
+            found=true
+        fi
+    done < "$git_config"
+
+    if [[ "$found" == false ]]; then
+        msg "  No namespaces configured."
+        msg "  Use 'git ns add <name> --email <email>' to create one."
+    fi
+}
+
+setup_colors
+
+[[ $# -eq 0 ]] && usage
+
+case "${1-}" in
+    add)
+        shift
+        cmd_add "$@"
+        ;;
+    list | ls)
+        cmd_list
+        ;;
+    -h | --help)
+        usage
+        ;;
+    *)
+        die "Unknown command: $1\nRun 'git ns --help' for usage."
+        ;;
+esac

@@ -1,0 +1,25 @@
+# Dotfiles-managed SSH config
+# Machine-local overrides go in ~/.ssh/config.local
+Include ~/.ssh/config.local
+
+# --- Git namespace Host aliases ---
+# Each alias routes to a specific SSH key for multi-account GitHub access
+# Use `git ns add <name> --email <email>` to add new entries
+
+Host github.com-personal
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github/id_personal
+    IdentitiesOnly yes
+
+Host github.com-work
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github/id_work
+    IdentitiesOnly yes
+
+# --- Defaults ---
+Host *
+    AddKeysToAgent yes
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
