@@ -145,11 +145,19 @@ This plan transforms the current macOS-centric dotfiles repo into a cross-platfo
 ### Phase 7: Git Config Updates
 
 26. **Update config:**
-    - Change `core.editor` from `vim` to `nano` (consistent with `$EDITOR`)
-    - Keep `delta` as the pager (it's cross-platform)
-    - Keep `.gitconfig-local` include for machine-specific identity
+    - ~~Change `core.editor` from `vim` to `nano` (consistent with `$EDITOR`)~~ ✅ Done
+    - Keep `delta` as the pager (it's cross-platform) ✅ Done
+    - ~~Keep `.gitconfig-local` include for machine-specific identity~~ ✅ Done
 
-27. **Update ignore:** — keep as-is, global ignore patterns are platform-agnostic.
+27. **Multi-identity git setup** ✅ Done
+    - Directory-based identity switching via `includeIf gitdir:` (personal, work, client namespaces)
+    - SSH Host aliases managed in `config/ssh/config` (github.com-personal, github.com-work)
+    - Removed non-functional `[credential]` sections (pure SSH, no credential manager)
+    - `git clone-as <ns> <repo>` helper with `gcp`/`gcw` shell aliases
+    - `git ns add/list` command to scaffold new namespaces (creates dir, git config, SSH alias, ssh-keys entry)
+    - `install.sh` creates `~/dev/personal` and `~/dev/work` automatically, symlinks SSH config
+
+28. **Update ignore:** — keep as-is, global ignore patterns are platform-agnostic.
 
 ### Phase 8: Documentation
 
