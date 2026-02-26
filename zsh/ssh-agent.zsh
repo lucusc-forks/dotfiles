@@ -6,6 +6,16 @@ if [[ "$(uname)" != "Linux" ]]; then
   return 0
 fi
 
+# Start GNOME Keyring for secrets (OAuth tokens, passwords) but NOT SSH
+# The secrets component is needed for GitHub Copilot CLI, Azure CLI, etc.
+# We use systemd ssh-agent for SSH keys instead of gnome-keyring-ssh
+if command -v gnome-keyring-daemon &>/dev/null; then
+  if [ ! -e "$XDG_RUNTIME_DIR/keyring" ]; then
+    eval $(gnome-keyring-daemon --start --components=secrets)
+  fi
+fi
+
+# Use systemd ssh-agent socket (NOT gnome-keyring's ssh component)
 export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
 
 # Auto-add SSH keys if none are loaded
