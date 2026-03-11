@@ -155,7 +155,7 @@ This plan transforms the current macOS-centric dotfiles repo into a cross-platfo
     - Removed non-functional `[credential]` sections (pure SSH, no credential manager)
     - `git clone-as <ns> <repo>` helper with `gcp`/`gcw` shell aliases
     - `git ns add/list` command to scaffold new namespaces (creates dir, git config, SSH alias, ssh-keys entry)
-    - `install.sh` creates `~/dev/personal` and `~/dev/work` automatically, symlinks SSH config
+    - `install.sh` creates `~/src/personal` and `~/src/work` automatically, symlinks SSH config
 
 28. **Update ignore:** — keep as-is, global ignore patterns are platform-agnostic.
 

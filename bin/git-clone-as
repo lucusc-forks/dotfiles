@@ -8,7 +8,7 @@ usage() {
 Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] <namespace> <repo>
 
 Clone a repo using the correct SSH Host alias for a given namespace and place
-it in ~/dev/<namespace>/.
+it in ~/src/<namespace>/.
 
 The namespace maps to an SSH Host alias (e.g. "personal" → github.com-personal)
 configured in ~/.ssh/config. This ensures the correct SSH key is used.
@@ -20,7 +20,7 @@ Arguments:
 Available options:
   -h, --help      Print this help and exit
   -v, --verbose   Print script debug info
-  -d, --dir       Override destination directory (default: ~/dev/<namespace>/<repo-name>)
+  -d, --dir       Override destination directory (default: ~/src/<namespace>/<repo-name>)
   -b, --bare      Clone as a bare repo for worktree workflows (uses git-bare-clone)
   --host          Git host (default: github.com)
 
@@ -116,7 +116,7 @@ repo_name=$(basename "$repo" .git)
 if [[ -n "$dest_dir" ]]; then
     target="$dest_dir"
 else
-    target="$HOME/dev/${namespace}/${repo_name}"
+    target="$HOME/src/${namespace}/${repo_name}"
 fi
 
 if [[ -d "$target" ]]; then

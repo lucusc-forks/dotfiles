@@ -101,14 +101,14 @@ cmd_add() {
     local git_identity="$DOTFILES/config/git/config-${name}"
     local ssh_config="$DOTFILES/config/ssh/config"
     local ssh_keys="$DOTFILES/config/ssh-keys"
-    local dev_dir="$HOME/dev/${name}"
+    local dev_dir="$HOME/src/${name}"
 
     # Validate files exist
     [[ ! -f "$git_config" ]] && die "Git config not found: $git_config"
     [[ ! -f "$ssh_config" ]] && die "SSH config not found: $ssh_config"
 
     # Check for existing namespace
-    if grep -q "gitdir:~/dev/${name}/" "$git_config" 2>/dev/null; then
+    if grep -q "gitdir:~/src/${name}/" "$git_config" 2>/dev/null; then
         die "Namespace '${name}' already exists in git config"
     fi
 
@@ -128,7 +128,7 @@ cmd_add() {
         info "Git identity config already exists: $git_identity"
     else
         cat > "$git_identity" <<GITEOF
-# Git identity for ${name} repos (~/dev/${name}/)
+# Git identity for ${name} repos (~/src/${name}/)
 # Managed by dotfiles — edit directly or via \`git ns\`
 [user]
     email = ${email}
@@ -138,7 +138,7 @@ GITEOF
 
     # 3. Append includeIf to git config
     cat >> "$git_config" <<GITEOF
-[includeIf "gitdir:~/dev/${name}/"]
+[includeIf "gitdir:~/src/${name}/"]
     path = ~/.config/git/config-${name}
 GITEOF
     success "Added includeIf directive to git config"
@@ -183,7 +183,7 @@ GITEOF
     msg "${GREEN}Namespace '${name}' configured successfully!${NOFORMAT}"
     msg ""
     msg "Summary:"
-    msg "  Directory:    ~/dev/${name}/"
+    msg "  Directory:    ~/src/${name}/"
     msg "  Git email:    ${email}"
     msg "  SSH Host:     ${host}-${name}"
     msg "  SSH Key:      ${key}"
@@ -213,7 +213,7 @@ cmd_list() {
     # Parse includeIf directives to find namespaces
     local found=false
     while IFS= read -r line; do
-        if [[ "$line" =~ \[includeIf\ \"gitdir:~/dev/([^/]+)/\"\] ]]; then
+        if [[ "$line" =~ \[includeIf\ \"gitdir:~/src/([^/]+)/\"\] ]]; then
             local ns="${BASH_REMATCH[1]}"
             local identity_file="$DOTFILES/config/git/config-${ns}"
             local ns_email="(not configured)"
@@ -242,7 +242,7 @@ cmd_list() {
                 done < "$ssh_config"
             fi
 
-            local dev_dir="$HOME/dev/${ns}"
+            local dev_dir="$HOME/src/${ns}"
             local dir_status="✗"
             [[ -d "$dev_dir" ]] && dir_status="✓"
 
@@ -250,7 +250,7 @@ cmd_list() {
             msg "    Email:     ${ns_email}"
             msg "    SSH Host:  ${ssh_host}"
             msg "    SSH Key:   ${ssh_key}"
-            msg "    Directory: ~/dev/${ns}/ [${dir_status}]"
+            msg "    Directory: ~/src/${ns}/ [${dir_status}]"
             msg ""
             found=true
         fi

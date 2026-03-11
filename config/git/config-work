@@ -1,4 +1,6 @@
-# Git identity for work repos (~/dev/work/)
+# Git identity for work repos (~/src/work/)
 # Managed by dotfiles — edit directly or via `git ns`
 [user]
     email = lucus.crawford@microsoft.com
+[github]
+        user = lucusc

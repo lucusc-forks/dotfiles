@@ -102,9 +102,9 @@ setup_symlinks() {
 }
 
 setup_dev_dirs() {
-    title "Setting up dev directories"
+    title "Setting up directories"
 
-    for dir in "$HOME/dev/personal" "$HOME/dev/work"; do
+    for dir in "$HOME/src/personal" "$HOME/src/work"; do
         if [ -d "$dir" ]; then
             success "$dir already exists"
         else

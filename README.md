@@ -55,8 +55,8 @@ cat ~/.ssh/github/id_work.pub       # → add to work GitHub account
 Use the personal SSH Host alias (configured by the dotfiles) — but since it isn't set up yet, use the default host for the initial clone:
 
 ```bash
-git clone git@github.com:lucrawford/dotfiles.git ~/dev/personal/dotfiles
-cd ~/dev/personal/dotfiles
+git clone git@github.com:lucrawford/dotfiles.git ~/src/personal/dotfiles
+cd ~/src/personal/dotfiles
 ```
 
 ### 4. Run the installer
@@ -67,7 +67,7 @@ cd ~/dev/personal/dotfiles
 
 This will:
 - Create symlinks (`*.symlink` → `~/.*`, `config/*` → `~/.config/*`)
-- Create `~/dev/personal/` and `~/dev/work/` directories
+- Create `~/src/personal/` and `~/src/work/` directories
 - Symlink SSH config to `~/.ssh/config` (with Host aliases for personal/work)
 - Enable the systemd SSH agent (Linux)
 - Install packages (Homebrew on macOS, apt on Linux)
@@ -86,10 +86,10 @@ ssh -T github.com-work        # Hi <username>! You've successfully authenticated
 
 ```bash
 # Personal repos
-gcp user/repo                 # → clones to ~/dev/personal/repo
+gcp user/repo                 # → clones to ~/src/personal/repo
 
 # Work repos
-gcw org/repo                  # → clones to ~/dev/work/repo
+gcw org/repo                  # → clones to ~/src/work/repo
 ```
 
 ### 7. (Optional) Add a client namespace
@@ -126,7 +126,7 @@ git clone-as clienta org/repo
 | `git` | Configure git identity (`~/.gitconfig-local`) |
 | `ssh-agent` | Enable systemd SSH agent service (Linux only) |
 | `ssh-config` | Symlink SSH config to `~/.ssh/config` |
-| `dev-dirs` | Create `~/dev/personal/` and `~/dev/work/` directories |
+| `dev-dirs` | Create `~/src/personal/` and `~/src/work/` directories |
 | `macos` | Apply macOS `defaults write` preferences |
 | `all` | Run all of the above in order |
 
@@ -137,8 +137,8 @@ Repos automatically use the correct git email based on which directory they're i
 ### How it works
 
 1. **Directory-based identity switching** — Git's `includeIf "gitdir:"` loads identity fragments per namespace:
-   - Repos in `~/dev/personal/` → `config/git/config-personal` (personal email)
-   - Repos in `~/dev/work/` → `config/git/config-work` (work email)
+   - Repos in `~/src/personal/` → `config/git/config-personal` (personal email)
+   - Repos in `~/src/work/` → `config/git/config-work` (work email)
 
 2. **SSH Host aliases** — Each namespace maps to an SSH Host alias in `~/.ssh/config` that routes to a specific SSH key:
    - `github.com-personal` → `~/.ssh/github/id_personal`
@@ -149,10 +149,10 @@ Repos automatically use the correct git email based on which directory they're i
 ### Verify identity per directory
 
 ```bash
-cd ~/dev/personal/some-repo
+cd ~/src/personal/some-repo
 git config user.email   # → personal email
 
-cd ~/dev/work/some-repo
+cd ~/src/work/some-repo
 git config user.email   # → work email
 ```
 
@@ -160,8 +160,8 @@ git config user.email   # → work email
 
 | Command | Alias | Description |
 |---------|-------|-------------|
-| `git clone-as personal user/repo` | `gcp user/repo` | Clone to `~/dev/personal/repo` using personal SSH key |
-| `git clone-as work org/repo` | `gcw org/repo` | Clone to `~/dev/work/repo` using work SSH key |
+| `git clone-as personal user/repo` | `gcp user/repo` | Clone to `~/src/personal/repo` using personal SSH key |
+| `git clone-as work org/repo` | `gcw org/repo` | Clone to `~/src/work/repo` using work SSH key |
 
 `git clone-as` supports additional flags:
 - `--dir <path>` — Override destination directory
@@ -177,7 +177,7 @@ git ns add clienta --email you@clienta.com
 ```
 
 This creates:
-- `~/dev/clienta/` directory
+- `~/src/clienta/` directory
 - `config/git/config-clienta` identity fragment
 - SSH Host alias `github.com-clienta` in SSH config
 - Entry in `config/ssh-keys` for SSH agent auto-loading
