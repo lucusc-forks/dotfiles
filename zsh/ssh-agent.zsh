@@ -1,40 +1,64 @@
-# SSH Agent setup for systemd user service
-# Sets SSH_AUTH_SOCK to systemd-managed socket and auto-adds keys if needed
-# Key list is read from ~/.config/ssh-keys (or ~/.config/ssh-keys.local for local overrides)
+# SSH Agent setup
+#
+# Ubuntu's openssh-client ships a working user-scope systemd ssh-agent
+# (`/usr/lib/systemd/user/ssh-agent.{socket,service}`). The socket unit sets
+# SSH_AUTH_SOCK=%t/openssh_agent in the systemd user environment, so most
+# shells inherit it automatically.
+#
+# This file:
+#   1. On Linux, makes sure SSH_AUTH_SOCK points at the systemd socket if it
+#      somehow isn't already set (e.g. non-PAM shells, containers).
+#   2. Starts gnome-keyring's `secrets` component (used by Copilot CLI,
+#      Azure CLI, etc.) without letting it hijack SSH.
+#   3. Auto-loads keys listed in ~/.config/ssh-keys[.local] into the agent.
+#
+# All ssh-add calls are wrapped in `timeout` so a wedged agent can never
+# freeze interactive shell startup.
 
 if [[ "$(uname)" != "Linux" ]]; then
   return 0
 fi
 
-# Start GNOME Keyring for secrets (OAuth tokens, passwords) but NOT SSH
-# The secrets component is needed for GitHub Copilot CLI, Azure CLI, etc.
-# We use systemd ssh-agent for SSH keys instead of gnome-keyring-ssh
+# gnome-keyring secrets (no SSH component — we use the systemd ssh-agent).
 if command -v gnome-keyring-daemon &>/dev/null; then
   if [ ! -e "$XDG_RUNTIME_DIR/keyring" ]; then
-    eval $(gnome-keyring-daemon --start --components=secrets)
+    eval $(gnome-keyring-daemon --start --components=secrets) >/dev/null 2>&1
   fi
 fi
 
-# Use systemd ssh-agent socket (NOT gnome-keyring's ssh component)
-export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
+# Fallback: SSH_AUTH_SOCK is normally set by ssh-agent.socket's ExecStartPost.
+# In contexts that don't inherit the systemd user env (some containers, raw
+# `su`, etc.), point at the standard socket path if it exists.
+if [[ -z "$SSH_AUTH_SOCK" && -n "$XDG_RUNTIME_DIR" && -S "$XDG_RUNTIME_DIR/openssh_agent" ]]; then
+  export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/openssh_agent"
+fi
 
-# Auto-add SSH keys if none are loaded
-if ! ssh-add -l >/dev/null 2>&1; then
-  # Load keys from config file(s)
-  local ssh_keys_file="$HOME/.config/ssh-keys"
-  local ssh_keys_local="$HOME/.config/ssh-keys.local"
-  
-  for keysfile in "$ssh_keys_file" "$ssh_keys_local"; do
+# Bail fast if there's no socket or no `timeout` binary.
+if [[ -z "$SSH_AUTH_SOCK" || ! -S "$SSH_AUTH_SOCK" ]] || ! command -v timeout >/dev/null 2>&1; then
+  return 0
+fi
+
+# Probe the agent with a hard 2s ceiling so a broken/restarting agent can
+# never block the prompt.
+timeout 2 ssh-add -l >/dev/null 2>&1
+_agent_status=$?
+
+# Exit codes:
+#   0   agent responding, keys already loaded — nothing to do
+#   1   agent responding, no keys             — auto-add from config
+#   2   agent not reachable                   — skip silently
+#   124 timeout fired (agent wedged)          — skip silently
+if [[ $_agent_status -eq 1 ]]; then
+  for keysfile in "$HOME/.config/ssh-keys" "$HOME/.config/ssh-keys.local"; do
     [[ -f "$keysfile" ]] || continue
-    
     while IFS= read -r keypath; do
-      # Skip empty lines and comments
       [[ -z "$keypath" || "$keypath" =~ ^[[:space:]]*# ]] && continue
-      
-      # Expand ~ to home directory
       keypath="${keypath/#\~/$HOME}"
-      
-      [[ -f "$keypath" ]] && ssh-add "$keypath" 2>/dev/null
+      [[ -f "$keypath" ]] || continue
+      # Force non-interactive mode so startup never blocks on a passphrase prompt.
+      SSH_ASKPASS=/bin/false SSH_ASKPASS_REQUIRE=force DISPLAY=none \
+        timeout 2 ssh-add "$keypath" </dev/null >/dev/null 2>&1
     done < "$keysfile"
   done
 fi
+unset _agent_status
